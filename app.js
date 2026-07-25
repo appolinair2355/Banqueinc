@@ -1,8 +1,8 @@
 // ===== STATE =====
-let currentCountry = { flag: '🇨🇮', name: "Côte d'Ivoire", code: '+225' };
+let currentCountry = { flag: '🇨🇮', name: "Cote d'Ivoire", code: '+225' };
 let selectedRecipient = { name: '', phone: '' };
 let balanceVisible = true;
-let activeAmountField = 'sent'; // 'sent' or 'received'
+let activeAmountField = 'sent';
 let sentRaw = '';
 let receivedRaw = '';
 
@@ -17,7 +17,6 @@ function goTo(screenId) {
     target.classList.add('active');
     target.style.display = 'flex';
   }
-  // Scroll to top
   if (target) target.scrollTop = 0;
 }
 
@@ -29,7 +28,7 @@ function toggleBalance() {
 }
 
 function closeBanner() {
-  const b = document.querySelector('.update-banner');
+  const b = document.getElementById('update-banner');
   if (b) b.style.display = 'none';
 }
 
@@ -77,12 +76,10 @@ function closeCountryPicker() {
   document.getElementById('country-picker').classList.add('hidden');
 }
 function selectCountry(flag, name, code) {
-  // clear all checks
   document.querySelectorAll('.check-mark').forEach(el => {
     el.textContent = '';
     el.classList.remove('active');
   });
-  // set selected
   const codeKey = code.replace('+', '');
   const checkEl = document.getElementById('check-' + codeKey);
   if (checkEl) {
@@ -127,27 +124,15 @@ function updateFieldStates(active) {
   }
 }
 
-// Click on amount-sent field activates it
-document.addEventListener('DOMContentLoaded', () => {
-  const sentField = document.getElementById('amount-sent');
-  const receivedField = document.getElementById('amount-received');
-  if (sentField) sentField.addEventListener('click', () => updateFieldStates('sent'));
-  if (receivedField) receivedField.addEventListener('click', () => updateFieldStates('received'));
-});
-
 function typeKey(key) {
   if (activeAmountField === 'sent') {
-    // Prevent multiple dots
     if (key === '.' && sentRaw.includes('.')) return;
-    // Max 9 digits before dot
     const parts = sentRaw.split('.');
     if (key !== '.' && parts[0].length >= 9) return;
     sentRaw += key;
     updateSentDisplay();
-    // Auto-calculate received from sent
     autoCalcFromSent();
   } else {
-    // Typing in received → calculate sent
     if (key === '.' && receivedRaw.includes('.')) return;
     const parts = receivedRaw.split('.');
     if (key !== '.' && parts[0].length >= 9) return;
@@ -175,7 +160,6 @@ function formatAmount(raw) {
   if (!raw || raw === '.') return raw;
   const num = parseFloat(raw);
   if (isNaN(num)) return raw;
-  // Format with dot thousands separator
   const parts = raw.split('.');
   const intPart = parseInt(parts[0], 10);
   const formatted = intPart.toLocaleString('fr-FR').replace(/\s/g, '.');
@@ -194,7 +178,6 @@ function updateReceivedDisplay() {
 }
 
 function autoCalcFromSent() {
-  // received = sent * 0.99 (1% fee deducted)
   const sentVal = parseFloat(sentRaw);
   if (!isNaN(sentVal) && sentRaw !== '' && sentRaw !== '.') {
     const received = Math.floor(sentVal * 0.99);
@@ -207,7 +190,6 @@ function autoCalcFromSent() {
 }
 
 function autoCalcFromReceived() {
-  // sent = received / 0.99
   const receivedVal = parseFloat(receivedRaw);
   if (!isNaN(receivedVal) && receivedRaw !== '' && receivedRaw !== '.') {
     const sent = Math.ceil(receivedVal / 0.99);
@@ -237,11 +219,45 @@ function sendMoney() {
   const frais = sentVal - receivedVal;
 
   document.getElementById('confirm-detail').innerHTML =
-    `Vous avez envoyé <strong>${formatAmount(sentRaw)} F</strong> à <strong>${selectedRecipient.name}</strong>.<br/>
-     ${selectedRecipient.name} recevra <strong>${formatAmount(receivedRaw)} F</strong>.<br/>
-     Frais Wave : <strong>${frais.toLocaleString('fr-FR')} F</strong>`;
+    'Vous avez envoye <strong>' + formatAmount(sentRaw) + ' F</strong> a <strong>' + selectedRecipient.name + '</strong>.<br/>' +
+    selectedRecipient.name + ' recevra <strong>' + formatAmount(receivedRaw) + ' F</strong>.<br/>' +
+    'Frais Wave : <strong>' + frais.toLocaleString('fr-FR') + ' F</strong>';
 
   goTo('screen-confirm');
+}
+
+// ===== TOAST =====
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.remove('hidden');
+  setTimeout(() => {
+    toast.classList.add('hidden');
+  }, 2500);
+}
+
+// ===== AIRTIME =====
+function selectOperator(name) {
+  document.getElementById('airtime-amounts').style.display = 'block';
+  showToast('Operateur ' + name + ' selectionne');
+}
+
+function buyAirtime(amount) {
+  showToast('Achat de ' + amount + ' F en cours de developpement');
+}
+
+// ===== HISTORY =====
+function filterHistory(type) {
+  document.querySelectorAll('.history-filter').forEach(f => f.classList.remove('active'));
+  event.target.classList.add('active');
+  const items = document.querySelectorAll('#history-list .tx-item');
+  items.forEach(item => {
+    const isIn = item.querySelector('.tx-in');
+    const isOut = item.querySelector('.tx-out');
+    if (type === 'all') item.style.display = '';
+    else if (type === 'in') item.style.display = isIn ? '' : 'none';
+    else if (type === 'out') item.style.display = isOut ? '' : 'none';
+  });
 }
 
 // ===== INIT =====

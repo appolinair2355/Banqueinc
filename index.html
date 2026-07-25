@@ -8,25 +8,27 @@
 </head>
 <body>
 
-<!-- ====== ÉCRAN ACCUEIL ====== -->
+<!-- ====== ACCUEIL ====== -->
 <div id="screen-home" class="screen active">
   <div class="home-header">
     <div class="home-header-top">
-      <div class="avatar-circle">
+      <div class="avatar-circle" onclick="goTo('screen-profile')">
         <svg viewBox="0 0 24 24" fill="white"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
       </div>
       <div class="balance-dots">
         <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
         <span class="eye-btn" onclick="toggleBalance()">
-          <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+          <svg id="eye-icon" viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
         </span>
       </div>
     </div>
     <div class="balance-label">Solde disponible</div>
     <div class="balance-amount" id="balance-display">2.000 F</div>
     <div class="qr-card">
-      <div class="qr-inner">
-        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMSAyMSI+PHJlY3Qgd2lkdGg9IjIxIiBoZWlnaHQ9IjIxIiBmaWxsPSJ3aGl0ZSIvPjxnIGZpbGw9ImJsYWNrIj48cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iNyIgaGVpZ2h0PSI3Ii8+PHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgZmlsbD0id2hpdGUiLz48cmVjdCB4PSIyIiB5PSIyIiB3aWR0aD0iMyIgaGVpZ2h0PSIzIi8+PHJlY3QgeD0iMTQiIHk9IjAiIHdpZHRoPSI3IiBoZWlnaHQ9IjciLz48cmVjdCB4PSIxNSIgeT0iMSIgd2lkdGg9IjUiIGhlaWdodD0iNSIgZmlsbD0id2hpdGUiLz48cmVjdCB4PSIxNiIgeT0iMiIgd2lkdGg9IjMiIGhlaWdodD0iMyIvPjxyZWN0IHg9IjAiIHk9IjE0IiB3aWR0aD0iNyIgaGVpZ2h0PSI3Ii8+PHJlY3QgeD0iMSIgeT0iMTUiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIGZpbGw9IndoaXRlIi8+PHJlY3QgeD0iMiIgeT0iMTYiIHdpZHRoPSIzIiBoZWlnaHQ9IjMiLz48cmVjdCB4PSI3IiB5PSIwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIi8+PHJlY3QgeD0iOSIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMiIvPjxyZWN0IHg9IjExIiB5PSIwIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIi8+PHJlY3QgeD0iOCIgeT0iMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIvPjxyZWN0IHg9IjEwIiB5PSIyIiB3aWR0aD0iMSIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iMTIiIHk9IjIiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiLz48cmVjdCB4PSI3IiB5PSI0IiB3aWR0aD0iMSIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iOSIgeT0iNCIgd2lkdGg9IjIiIGhlaWdodD0iMSIvPjxyZWN0IHg9IjEyIiB5PSI0IiB3aWR0aD0iMSIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iNyIgeT0iNyIgd2lkdGg9IjEiIGhlaWdodD0iMSIvPjxyZWN0IHg9IjkiIHk9IjciIHdpZHRoPSIyIiBoZWlnaHQ9IjEiLz48cmVjdCB4PSIxMiIgeT0iNyIgd2lkdGg9IjIiIGhlaWdodD0iMSIvPjxyZWN0IHg9IjciIHk9IjkiIHdpZHRoPSIyIiBoZWlnaHQ9IjEiLz48cmVjdCB4PSIxMCIgeT0iOSIgd2lkdGg9IjEiIGhlaWdodD0iMiIvPjxyZWN0IHg9IjEyIiB5PSI5IiB3aWR0aD0iMiIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iNyIgeT0iMTIiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiLz48cmVjdCB4PSI5IiB5PSIxMiIgd2lkdGg9IjIiIGhlaWdodD0iMSIvPjxyZWN0IHg9IjE0IiB5PSI4IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIi8+PHJlY3QgeD0iMTYiIHk9IjgiIHdpZHRoPSIxIiBoZWlnaHQ9IjIiLz48cmVjdCB4PSIxOCIgeT0iOCIgd2lkdGg9IjIiIGhlaWdodD0iMSIvPjxyZWN0IHg9IjE0IiB5PSIxMCIgd2lkdGg9IjIiIGhlaWdodD0iMSIvPjxyZWN0IHg9IjE4IiB5PSIxMCIgd2lkdGg9IjIiIGhlaWdodD0iMiIvPjxyZWN0IHg9IjE0IiB5PSIxMiIgd2lkdGg9IjEiIGhlaWdodD0iMSIvPjxyZWN0IHg9IjE2IiB5PSIxMiIgd2lkdGg9IjIiIGhlaWdodD0iMSIvPjxyZWN0IHg9IjAiIHk9IjkiIHdpZHRoPSIxIiBoZWlnaHQ9IjIiLz48cmVjdCB4PSIyIiB5PSI5IiB3aWR0aD0iMiIgaGVpZ2h0PSIxIi8+PHJlY3QgeD0iMiIgeT0iMTEiIHdpZHRoPSIxIiBoZWlnaHQ9IjIiLz48cmVjdCB4PSI0IiB5PSIxMSIgd2lkdGg9IjIiIGhlaWdodD0iMSIvPjxyZWN0IHg9IjAiIHk9IjEyIiB3aWR0aD0iMSIgaGVpZ2h0PSIxIi8+PHJlY3QgeD0iMTQiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIi8+PHJlY3QgeD0iMTYiIHk9IjE0IiB3aWR0aD0iMiIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iMTkiIHk9IjE0IiB3aWR0aD0iMSIgaGVpZ2h0PSIxIi8+PHJlY3QgeD0iMTUiIHk9IjE2IiB3aWR0aD0iMSIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iMTciIHk9IjE2IiB3aWR0aD0iMSIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iMTkiIHk9IjE2IiB3aWR0aD0iMSIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iMTQiIHk9IjE4IiB3aWR0aD0iMSIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iMTYiIHk9IjE4IiB3aWR0aD0iMSIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iMTgiIHk9IjE4IiB3aWR0aD0iMiIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iNyIgeT0iMTQiIHdpZHRoPSIyIiBoZWlnaHQ9IjIiLz48cmVjdCB4PSIxMCIgeT0iMTQiIHdpZHRoPSIxIiBoZWlnaHQ9IjIiLz48cmVjdCB4PSI3IiB5PSIxNyIgd2lkdGg9IjEiIGhlaWdodD0iMiIvPjxyZWN0IHg9IjkiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iMTEiIHk9IjE3IiB3aWR0aD0iMSIgaGVpZ2h0PSIyIi8+PHJlY3QgeD0iOCIgeT0iMTkiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiLz48cmVjdCB4PSIxMCIgeT0iMTkiIHdpZHRoPSIxIiBoZWlnaHQ9IjEiLz48L2c+PC9zdmc+" alt="QR Code" class="qr-img"/>
+      <div class="qr-inner" onclick="goTo('screen-qr-scanner')">
+        <div class="qr-placeholder">
+          <svg viewBox="0 0 24 24" fill="#1565C0" width="60" height="60"><path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2zM15 15h2v2h-2zM13 17h2v2h-2zM17 13h2v2h-2zM19 15h2v2h-2zM17 17h2v2h-2zM15 19h2v2h-2zM19 19h2v2h-2z"/></svg>
+        </div>
         <div class="scanner-label">
           <svg viewBox="0 0 24 24" fill="#1565C0" width="18" height="18"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13zm-3 3h1.5v1.5H13V16zm1.5 1.5H16V19h-1.5v-1.5zM16 16h1.5v1.5H16V16zm1.5-1.5H19V16h-1.5v-1.5zm0 3H19V19h-1.5v-1.5zM22 7h-2V4h-3V2h5v5zm0 15v-5h-2v3h-3v2h5zM2 22h5v-2H4v-3H2v5zM2 2v5h2V4h3V2H2z"/></svg>
           Scanner
@@ -37,13 +39,13 @@
   </div>
 
   <div class="home-body">
-    <div class="update-banner">
+    <div class="update-banner" id="update-banner">
       <div class="update-icon">
         <svg viewBox="0 0 24 24" fill="#00B4D8" width="32" height="32"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14zm-1-6h-3V8h-2v5H8l4 4 4-4z"/></svg>
       </div>
       <div class="update-text">
-        <strong>Nouvelle mise à jour!</strong><br/>
-        Une nouvelle version de Wave est disponible. Cliquez ici pour mettre à jour
+        <strong>Nouvelle mise a jour!</strong><br/>
+        Une nouvelle version de Wave est disponible. Cliquez ici pour mettre a jour
       </div>
       <div class="update-close" onclick="closeBanner()">✕</div>
       <div class="update-play">▶</div>
@@ -56,41 +58,41 @@
         </div>
         <span>Transfert</span>
       </div>
-      <div class="menu-item">
+      <div class="menu-item" onclick="goTo('screen-payments')">
         <div class="menu-icon" style="background:#FFF8E1;">
           <svg viewBox="0 0 24 24" width="28" height="28" fill="#FFA000"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 23.42 5H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
         </div>
         <span>Paiements</span>
       </div>
-      <div class="menu-item">
+      <div class="menu-item" onclick="goTo('screen-bank')">
         <div class="menu-icon" style="background:#FFEBEE;">
           <svg viewBox="0 0 24 24" width="28" height="28" fill="#E53935"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zM11.5 1L2 6v2h19V6l-9.5-5z"/></svg>
         </div>
         <span>Banque</span>
       </div>
-      <div class="menu-item">
+      <div class="menu-item" onclick="goTo('screen-card')">
         <div class="menu-icon" style="background:#F3E5F5;">
           <svg viewBox="0 0 24 24" width="28" height="28" fill="#8E24AA"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
         </div>
         <span>Carte</span>
       </div>
-      <div class="menu-item">
+      <div class="menu-item" onclick="goTo('screen-gifts')">
         <div class="menu-icon" style="background:#E8F5E9;">
           <svg viewBox="0 0 24 24" width="28" height="28" fill="#43A047"><path d="M20 6h-2.18c.07-.44.18-.88.18-1.34C18 2.54 15.71.3 12.9.3c-1.42 0-2.8.6-3.78 1.64L8 3.06 6.88 1.94C5.9.9 4.52.3 3.1.3.29.3-2 2.54-2 4.66c0 .46.11.9.18 1.34H-2c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h22c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2z"/><path d="M20 6h-2.18c.07-.44.18-.88.18-1.34C18 2.54 15.71.3 12.9.3c-1.42 0-2.8.6-3.78 1.64L8 3.06 6.88 1.94C5.9.9 4.52.3 3.1.3.29.3-2 2.54-2 4.66c0 .46.11.9.18 1.34H-2c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h22c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zM15.69 2.3c1.36 0 2.31.98 2.31 2.36 0 1.38-1.53 2.52-2.9 3.34H8.9C7.53 7.18 6 6.04 6 4.66 6 3.28 6.95 2.3 8.31 2.3c.75 0 1.5.34 2.03.92l1.66 1.79 1.66-1.79c.53-.58 1.28-.92 2.03-.92zM20 19H2V8h4.99l-3 3h12.02l-3-3H20v11z" fill="#43A047"/></svg>
         </div>
         <span>Cadeaux</span>
       </div>
-      <div class="menu-item">
+      <div class="menu-item" onclick="goTo('screen-safe')">
         <div class="menu-icon" style="background:#FCE4EC;">
           <svg viewBox="0 0 24 24" width="28" height="28" fill="#E91E8C"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
         </div>
         <span>Coffre</span>
       </div>
-      <div class="menu-item">
+      <div class="menu-item" onclick="goTo('screen-expenses')">
         <div class="menu-icon" style="background:#E3F2FD;">
           <svg viewBox="0 0 24 24" width="28" height="28" fill="#1E88E5"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
         </div>
-        <span>Dépenses</span>
+        <span>Depenses</span>
       </div>
     </div>
 
@@ -99,8 +101,8 @@
         <div class="tx-left">
           <div class="tx-icon tx-in">+</div>
           <div class="tx-info">
-            <div class="tx-label">Transfert depuis carte prépayée</div>
-            <div class="tx-date">23 juillet 2026 à 02:12</div>
+            <div class="tx-label">Transfert depuis carte prepayee</div>
+            <div class="tx-date">23 juillet 2026 a 02:12</div>
           </div>
         </div>
         <div class="tx-amount tx-positive">+419F</div>
@@ -110,7 +112,7 @@
           <div class="tx-icon tx-out">−</div>
           <div class="tx-info">
             <div class="tx-label">Paiement BICTORYS CI * Conn</div>
-            <div class="tx-date">23 juillet 2026 à 02:07</div>
+            <div class="tx-date">23 juillet 2026 a 02:07</div>
           </div>
         </div>
         <div class="tx-amount tx-negative">-2.053F</div>
@@ -120,7 +122,7 @@
           <div class="tx-icon tx-out">−</div>
           <div class="tx-info">
             <div class="tx-label">Paiement Boutique Abdoulaye</div>
-            <div class="tx-date">23 juillet 2026 à 01:19</div>
+            <div class="tx-date">23 juillet 2026 a 01:19</div>
           </div>
         </div>
         <div class="tx-amount tx-negative">-300F</div>
@@ -129,8 +131,8 @@
         <div class="tx-left">
           <div class="tx-icon tx-in">+</div>
           <div class="tx-info">
-            <div class="tx-label">Reçu de Kouamé Jean</div>
-            <div class="tx-date">22 juillet 2026 à 18:45</div>
+            <div class="tx-label">Recu de Kouame Jean</div>
+            <div class="tx-date">22 juillet 2026 a 18:45</div>
           </div>
         </div>
         <div class="tx-amount tx-positive">+5.000F</div>
@@ -140,7 +142,7 @@
           <div class="tx-icon tx-out">−</div>
           <div class="tx-info">
             <div class="tx-label">Transfert vers Assouma A J M G</div>
-            <div class="tx-date">22 juillet 2026 à 13:00</div>
+            <div class="tx-date">22 juillet 2026 a 13:00</div>
           </div>
         </div>
         <div class="tx-amount tx-negative">-2.525F</div>
@@ -149,7 +151,7 @@
   </div>
 </div>
 
-<!-- ====== ÉCRAN TRANSFERT (recherche de contact) ====== -->
+<!-- ====== TRANSFERT ====== -->
 <div id="screen-transfer" class="screen">
   <div class="page-header">
     <div class="back-btn" onclick="goTo('screen-home')">
@@ -158,7 +160,7 @@
     <div class="page-title">Envoyer de l'Argent</div>
   </div>
   <div class="page-body">
-    <div class="to-label">À</div>
+    <div class="to-label">A</div>
     <div class="search-box">
       <input type="text" id="contact-search" placeholder="" class="contact-input" oninput="filterContacts(this.value)" autofocus />
     </div>
@@ -167,9 +169,9 @@
         <div class="action-icon blue-circle">
           <svg viewBox="0 0 24 24" fill="white" width="22" height="22"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         </div>
-        <span>Saisir un nouveau numéro</span>
+        <span>Saisir un nouveau numero</span>
       </div>
-      <div class="contact-action">
+      <div class="contact-action" onclick="goTo('screen-qr-scanner')">
         <div class="action-icon qr-circle">
           <svg viewBox="0 0 24 24" fill="#00B4D8" width="22" height="22"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5z"/></svg>
         </div>
@@ -185,12 +187,12 @@
           <div class="contact-phone">07 67 01 06 60</div>
         </div>
       </div>
-      <div class="contact-item" onclick="selectContact('Soeur Jacké','07 59 53 81 88')">
+      <div class="contact-item" onclick="selectContact('Soeur Jacke','07 59 53 81 88')">
         <div class="contact-avatar">
           <svg viewBox="0 0 24 24" fill="#9E9E9E" width="24" height="24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
         </div>
         <div class="contact-info">
-          <div class="contact-name">Soeur Jacké</div>
+          <div class="contact-name">Soeur Jacke</div>
           <div class="contact-phone">07 59 53 81 88</div>
         </div>
       </div>
@@ -203,12 +205,12 @@
           <div class="contact-phone">01 02 75 22 71</div>
         </div>
       </div>
-      <div class="contact-item" onclick="selectContact('Mon Amour ❤️💋','07 58 53 05 71')">
+      <div class="contact-item" onclick="selectContact('Mon Amour','07 58 53 05 71')">
         <div class="contact-avatar">
           <svg viewBox="0 0 24 24" fill="#9E9E9E" width="24" height="24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
         </div>
         <div class="contact-info">
-          <div class="contact-name">Mon Amour ❤️💋</div>
+          <div class="contact-name">Mon Amour</div>
           <div class="contact-phone">07 58 53 05 71</div>
         </div>
       </div>
@@ -216,7 +218,7 @@
   </div>
 </div>
 
-<!-- ====== ÉCRAN NOUVEAU NUMÉRO ====== -->
+<!-- ====== NOUVEAU NUMERO ====== -->
 <div id="screen-new-number" class="screen">
   <div class="page-header">
     <div class="back-btn" onclick="goTo('screen-transfer')">
@@ -241,12 +243,12 @@
   </div>
 </div>
 
-<!-- ====== SÉLECTEUR DE PAYS ====== -->
+<!-- ====== SELECTEUR DE PAYS ====== -->
 <div id="country-picker" class="modal hidden">
   <div class="modal-overlay" onclick="closeCountryPicker()"></div>
   <div class="modal-sheet">
     <div class="modal-header">
-      <span>Sélectionnez votre pays</span>
+      <span>Selectionnez votre pays</span>
       <span class="modal-close" onclick="closeCountryPicker()">✕</span>
     </div>
     <div class="country-list">
@@ -256,11 +258,41 @@
         <span class="country-code">+226</span>
         <span class="check-mark" id="check-226"></span>
       </div>
-      <div class="country-row" onclick="selectCountry('🇨🇮','Côte d\'Ivoire','+225')">
+      <div class="country-row" onclick="selectCountry('🇨🇲','Cameroun','+237')">
+        <span class="country-flag">🇨🇲</span>
+        <span class="country-name">Cameroun</span>
+        <span class="country-code">+237</span>
+        <span class="check-mark" id="check-237"></span>
+      </div>
+      <div class="country-row" onclick="selectCountry('🇨🇩','Congo-Kinshasa','+243')">
+        <span class="country-flag">🇨🇩</span>
+        <span class="country-name">Congo-Kinshasa</span>
+        <span class="country-code">+243</span>
+        <span class="check-mark" id="check-243"></span>
+      </div>
+      <div class="country-row" onclick="selectCountry('🇨🇮','Cote d'Ivoire','+225')">
         <span class="country-flag">🇨🇮</span>
-        <span class="country-name">Côte d'Ivoire</span>
+        <span class="country-name">Cote d'Ivoire</span>
         <span class="country-code">+225</span>
         <span class="check-mark active" id="check-225">✓</span>
+      </div>
+      <div class="country-row" onclick="selectCountry('🇬🇲','Gambie','+220')">
+        <span class="country-flag">🇬🇲</span>
+        <span class="country-name">Gambie</span>
+        <span class="country-code">+220</span>
+        <span class="check-mark" id="check-220"></span>
+      </div>
+      <div class="country-row" onclick="selectCountry('🇬🇳','Guinee','+224')">
+        <span class="country-flag">🇬🇳</span>
+        <span class="country-name">Guinee</span>
+        <span class="country-code">+224</span>
+        <span class="check-mark" id="check-224"></span>
+      </div>
+      <div class="country-row" onclick="selectCountry('🇲🇼','Malawi','+265')">
+        <span class="country-flag">🇲🇼</span>
+        <span class="country-name">Malawi</span>
+        <span class="country-code">+265</span>
+        <span class="check-mark" id="check-265"></span>
       </div>
       <div class="country-row" onclick="selectCountry('🇲🇱','Mali','+223')">
         <span class="country-flag">🇲🇱</span>
@@ -268,23 +300,11 @@
         <span class="country-code">+223</span>
         <span class="check-mark" id="check-223"></span>
       </div>
-      <div class="country-row" onclick="selectCountry('🇸🇳','Sénégal','+221')">
-        <span class="country-flag">🇸🇳</span>
-        <span class="country-name">Sénégal</span>
-        <span class="country-code">+221</span>
-        <span class="check-mark" id="check-221"></span>
-      </div>
-      <div class="country-row" onclick="selectCountry('🇬🇳','Guinée','+224')">
-        <span class="country-flag">🇬🇳</span>
-        <span class="country-name">Guinée</span>
-        <span class="country-code">+224</span>
-        <span class="check-mark" id="check-224"></span>
-      </div>
-      <div class="country-row" onclick="selectCountry('🇬🇭','Ghana','+233')">
-        <span class="country-flag">🇬🇭</span>
-        <span class="country-name">Ghana</span>
-        <span class="country-code">+233</span>
-        <span class="check-mark" id="check-233"></span>
+      <div class="country-row" onclick="selectCountry('🇳🇪','Niger','+227')">
+        <span class="country-flag">🇳🇪</span>
+        <span class="country-name">Niger</span>
+        <span class="country-code">+227</span>
+        <span class="check-mark" id="check-227"></span>
       </div>
       <div class="country-row" onclick="selectCountry('🇺🇬','Ouganda','+256')">
         <span class="country-flag">🇺🇬</span>
@@ -292,11 +312,23 @@
         <span class="country-code">+256</span>
         <span class="check-mark" id="check-256"></span>
       </div>
+      <div class="country-row" onclick="selectCountry('🇸🇱','Sierra Leone','+232')">
+        <span class="country-flag">🇸🇱</span>
+        <span class="country-name">Sierra Leone</span>
+        <span class="country-code">+232</span>
+        <span class="check-mark" id="check-232"></span>
+      </div>
+      <div class="country-row" onclick="selectCountry('🇸🇳','Senegal','+221')">
+        <span class="country-flag">🇸🇳</span>
+        <span class="country-name">Senegal</span>
+        <span class="country-code">+221</span>
+        <span class="check-mark" id="check-221"></span>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ====== ÉCRAN ENVOI D'ARGENT ====== -->
+<!-- ====== ENVOI D'ARGENT ====== -->
 <div id="screen-send" class="screen">
   <div class="page-header">
     <div class="back-btn" onclick="goTo('screen-transfer')">
@@ -306,20 +338,20 @@
   </div>
   <div class="page-body send-body">
     <div class="recipient-card">
-      <div class="recipient-label">À</div>
+      <div class="recipient-label">A</div>
       <div class="recipient-name" id="send-recipient-name">Assouma A J M G</div>
       <div class="recipient-phone" id="send-recipient-phone">07 67 01 06 60</div>
     </div>
 
-    <div class="amount-field-wrap">
-      <div class="amount-label" id="label-sent">Montant Envoyé</div>
-      <input type="text" id="amount-sent" class="amount-input active-field" readonly placeholder="Montant Envoyé" />
+    <div class="amount-field-wrap" onclick="updateFieldStates('sent')">
+      <div class="amount-label" id="label-sent">Montant Envoye</div>
+      <input type="text" id="amount-sent" class="amount-input active-field" readonly placeholder="0" />
       <div class="field-underline cyan"></div>
     </div>
 
-    <div class="amount-field-wrap">
-      <div class="amount-label" id="label-received">Montant Reçu</div>
-      <input type="text" id="amount-received" class="amount-input" readonly placeholder="Montant Reçu" />
+    <div class="amount-field-wrap" onclick="updateFieldStates('received')">
+      <div class="amount-label" id="label-received">Montant Recu</div>
+      <input type="text" id="amount-received" class="amount-input" readonly placeholder="0" />
       <div class="field-underline"></div>
     </div>
 
@@ -356,15 +388,427 @@
   </div>
 </div>
 
-<!-- ====== ÉCRAN CONFIRMATION ====== -->
+<!-- ====== CONFIRMATION ====== -->
 <div id="screen-confirm" class="screen">
   <div class="confirm-body">
     <div class="confirm-check">✓</div>
-    <div class="confirm-title">Transfert réussi!</div>
+    <div class="confirm-title">Transfert reussi!</div>
     <div class="confirm-detail" id="confirm-detail"></div>
-    <button class="btn-confirm" onclick="goTo('screen-home')" style="margin-top:32px;">Retour à l'accueil</button>
+    <button class="btn-confirm" onclick="goTo('screen-home')" style="margin-top:32px;">Retour a l'accueil</button>
   </div>
 </div>
+
+<!-- ====== PAIEMENTS ====== -->
+<div id="screen-payments" class="screen">
+  <div class="page-header">
+    <div class="back-btn" onclick="goTo('screen-home')">
+      <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+    <div class="page-title">Paiements</div>
+  </div>
+  <div class="page-body">
+    <div class="payments-grid">
+      <div class="payment-card" onclick="showToast('Paiement facture en cours de developpement')">
+        <div class="payment-icon" style="background:#E3F2FD;">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="#1565C0"><path d="M13 2v8h8V2h-8zM3 13h8v-8H3v8zm2-6h4v4H5V7zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 13h2v2h-2zM15 15h2v2h-2zM13 17h2v2h-2zM17 13h2v2h-2zM19 15h2v2h-2zM17 17h2v2h-2zM15 19h2v2h-2zM19 19h2v2h-2z"/></svg>
+        </div>
+        <span>Woyofal / Electricite</span>
+      </div>
+      <div class="payment-card" onclick="showToast('Paiement eau en cours de developpement')">
+        <div class="payment-icon" style="background:#E8F5E9;">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="#2E7D32"><path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8zm0 18c-3.15 0-6-2.38-6-6.2 0-2.34 1.78-5.12 6-8.64 4.22 3.52 6 6.3 6 8.64 0 3.82-2.85 6.2-6 6.2z"/></svg>
+        </div>
+        <span>Eau (SODECI)</span>
+      </div>
+      <div class="payment-card" onclick="showToast('Paiement impots en cours de developpement')">
+        <div class="payment-icon" style="background:#FFF3E0;">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="#E65100"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        </div>
+        <span>Impots et Taxes</span>
+      </div>
+      <div class="payment-card" onclick="showToast('Paiement bourses en cours de developpement')">
+        <div class="payment-icon" style="background:#F3E5F5;">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="#7B1FA2"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
+        </div>
+        <span>Bourses et Pensions</span>
+      </div>
+    </div>
+    <div class="section-title" style="margin-top:20px;">Paiements marchands</div>
+    <div class="merchant-list">
+      <div class="merchant-item" onclick="showToast('Paiement marchand en cours de developpement')">
+        <div class="merchant-avatar" style="background:#FFEBEE;">🛒</div>
+        <div class="merchant-info">
+          <div class="merchant-name">Supermarche Casino</div>
+          <div class="merchant-cat">Alimentation</div>
+        </div>
+        <div class="merchant-arrow">›</div>
+      </div>
+      <div class="merchant-item" onclick="showToast('Paiement marchand en cours de developpement')">
+        <div class="merchant-avatar" style="background:#E8F5E9;">⛽</div>
+        <div class="merchant-info">
+          <div class="merchant-name">Station Total</div>
+          <div class="merchant-cat">Carburant</div>
+        </div>
+        <div class="merchant-arrow">›</div>
+      </div>
+      <div class="merchant-item" onclick="showToast('Paiement marchand en cours de developpement')">
+        <div class="merchant-avatar" style="background:#E3F2FD;">🏥</div>
+        <div class="merchant-info">
+          <div class="merchant-name">Pharmacie du Marche</div>
+          <div class="merchant-cat">Sante</div>
+        </div>
+        <div class="merchant-arrow">›</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== BANQUE ====== -->
+<div id="screen-bank" class="screen">
+  <div class="page-header">
+    <div class="back-btn" onclick="goTo('screen-home')">
+      <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+    <div class="page-title">Banque</div>
+  </div>
+  <div class="page-body">
+    <div class="bank-balance-card">
+      <div class="bank-balance-label">Solde lie au compte bancaire</div>
+      <div class="bank-balance-amount">0 F</div>
+      <div class="bank-balance-info">Aucun compte bancaire lie</div>
+    </div>
+    <div class="section-title">Banques partenaires</div>
+    <div class="bank-list">
+      <div class="bank-item" onclick="showToast('Liaison Ecobank en cours de developpement')">
+        <div class="bank-logo" style="background:#003B5C; color:#fff;">E</div>
+        <div class="bank-info">
+          <div class="bank-name">Ecobank</div>
+          <div class="bank-desc">Virements compte ↔ Wave</div>
+        </div>
+        <div class="bank-link-btn">Lier</div>
+      </div>
+      <div class="bank-item" onclick="showToast('Liaison UBA en cours de developpement')">
+        <div class="bank-logo" style="background:#D4AF37; color:#fff;">U</div>
+        <div class="bank-info">
+          <div class="bank-name">UBA Senegal</div>
+          <div class="bank-desc">Virements compte ↔ Wave</div>
+        </div>
+        <div class="bank-link-btn">Lier</div>
+      </div>
+      <div class="bank-item" onclick="showToast('Liaison CBAO en cours de developpement')">
+        <div class="bank-logo" style="background:#C41E3A; color:#fff;">C</div>
+        <div class="bank-info">
+          <div class="bank-name">CBAO (Attijariwafa)</div>
+          <div class="bank-desc">Integration CBAO Mobile</div>
+        </div>
+        <div class="bank-link-btn">Lier</div>
+      </div>
+    </div>
+    <div class="bank-notice">
+      <svg viewBox="0 0 24 24" fill="#00B4D8" width="20" height="20"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+      <span>Wave n'est pas une banque. C'est un etablissement de monnaie electronique agree par la BCEAO.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== CARTE ====== -->
+<div id="screen-card" class="screen">
+  <div class="page-header">
+    <div class="back-btn" onclick="goTo('screen-home')">
+      <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+    <div class="page-title">Carte Wave</div>
+  </div>
+  <div class="page-body">
+    <div class="card-visual">
+      <div class="card-wave">
+        <div class="card-chip"></div>
+        <div class="card-number">**** **** **** 4521</div>
+        <div class="card-holder">JEAN KOUAME</div>
+        <div class="card-expiry">12/28</div>
+        <div class="card-wave-logo">Wave</div>
+      </div>
+    </div>
+    <div class="card-actions">
+      <div class="card-action" onclick="showToast('Blocage carte en cours de developpement')">
+        <svg viewBox="0 0 24 24" fill="#E53935" width="24" height="24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2z"/></svg>
+        <span>Bloquer la carte</span>
+      </div>
+      <div class="card-action" onclick="showToast('Modifier PIN en cours de developpement')">
+        <svg viewBox="0 0 24 24" fill="#1565C0" width="24" height="24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+        <span>Modifier PIN</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== CADEAUX ====== -->
+<div id="screen-gifts" class="screen">
+  <div class="page-header">
+    <div class="back-btn" onclick="goTo('screen-home')">
+      <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+    <div class="page-title">Cadeaux</div>
+  </div>
+  <div class="page-body">
+    <div class="gift-empty">
+      <div class="gift-emoji">🎁</div>
+      <div class="gift-title">Offrez un cadeau</div>
+      <div class="gift-desc">Envoyez de l'argent a vos proches pour une occasion speciale avec un message personnalise.</div>
+      <button class="btn-confirm" onclick="goTo('screen-transfer')" style="margin-top:24px;">Envoyer un cadeau</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== COFFRE ====== -->
+<div id="screen-safe" class="screen">
+  <div class="page-header">
+    <div class="back-btn" onclick="goTo('screen-home')">
+      <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+    <div class="page-title">Coffre</div>
+  </div>
+  <div class="page-body">
+    <div class="safe-balance-card">
+      <div class="safe-balance-label">Montant dans le coffre</div>
+      <div class="safe-balance-amount" id="safe-balance">0 F</div>
+      <div class="safe-actions">
+        <button class="safe-btn deposit" onclick="showToast('Depot dans le coffre en cours de developpement')">Deposer</button>
+        <button class="safe-btn withdraw" onclick="showToast('Retrait du coffre en cours de developpement')">Retirer</button>
+      </div>
+    </div>
+    <div class="safe-info">
+      <svg viewBox="0 0 24 24" fill="#00B4D8" width="20" height="20"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+      <span>Le coffre vous permet de mettre de l'argent de cote en toute securite. Retraits gratuits.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== DEPENSES ====== -->
+<div id="screen-expenses" class="screen">
+  <div class="page-header">
+    <div class="back-btn" onclick="goTo('screen-home')">
+      <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+    <div class="page-title">Depenses</div>
+  </div>
+  <div class="page-body">
+    <div class="expense-chart">
+      <div class="expense-total">
+        <div class="expense-total-label">Total ce mois</div>
+        <div class="expense-total-amount">-5.297 F</div>
+      </div>
+      <div class="expense-bars">
+        <div class="expense-bar-item">
+          <div class="expense-bar-label">Transferts</div>
+          <div class="expense-bar-track"><div class="expense-bar-fill" style="width:48%; background:#1565C0;"></div></div>
+          <div class="expense-bar-value">2.525 F</div>
+        </div>
+        <div class="expense-bar-item">
+          <div class="expense-bar-label">Paiements</div>
+          <div class="expense-bar-track"><div class="expense-bar-fill" style="width:44%; background:#00B4D8;"></div></div>
+          <div class="expense-bar-value">2.353 F</div>
+        </div>
+        <div class="expense-bar-item">
+          <div class="expense-bar-label">Credit</div>
+          <div class="expense-bar-track"><div class="expense-bar-fill" style="width:8%; background:#43A047;"></div></div>
+          <div class="expense-bar-value">419 F</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== CREDIT TELEPHONIQUE ====== -->
+<div id="screen-airtime" class="screen">
+  <div class="page-header">
+    <div class="back-btn" onclick="goTo('screen-home')">
+      <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+    <div class="page-title">Achat de credit</div>
+  </div>
+  <div class="page-body">
+    <div class="airtime-operators">
+      <div class="operator-card" onclick="selectOperator('Orange')">
+        <div class="operator-logo" style="background:#FF6600;">O</div>
+        <span>Orange</span>
+      </div>
+      <div class="operator-card" onclick="selectOperator('MTN')">
+        <div class="operator-logo" style="background:#FFCC00; color:#000;">M</div>
+        <span>MTN</span>
+      </div>
+      <div class="operator-card" onclick="selectOperator('Moov')">
+        <div class="operator-logo" style="background:#0066CC;">M</div>
+        <span>Moov</span>
+      </div>
+      <div class="operator-card" onclick="selectOperator('Free')">
+        <div class="operator-logo" style="background:#E31937;">F</div>
+        <span>Free</span>
+      </div>
+    </div>
+    <div class="airtime-amounts" id="airtime-amounts" style="display:none;">
+      <div class="section-title">Montant</div>
+      <div class="amount-grid">
+        <div class="amount-btn" onclick="buyAirtime(500)">500 F</div>
+        <div class="amount-btn" onclick="buyAirtime(1000)">1.000 F</div>
+        <div class="amount-btn" onclick="buyAirtime(2000)">2.000 F</div>
+        <div class="amount-btn" onclick="buyAirtime(5000)">5.000 F</div>
+        <div class="amount-btn" onclick="buyAirtime(10000)">10.000 F</div>
+        <div class="amount-btn" onclick="buyAirtime(25000)">25.000 F</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== HISTORIQUE ====== -->
+<div id="screen-history" class="screen">
+  <div class="page-header">
+    <div class="back-btn" onclick="goTo('screen-home')">
+      <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+    <div class="page-title">Historique</div>
+  </div>
+  <div class="page-body">
+    <div class="history-filters">
+      <div class="history-filter active" onclick="filterHistory('all')">Tout</div>
+      <div class="history-filter" onclick="filterHistory('in')">Entrees</div>
+      <div class="history-filter" onclick="filterHistory('out')">Sorties</div>
+    </div>
+    <div id="history-list">
+      <div class="tx-item">
+        <div class="tx-left">
+          <div class="tx-icon tx-in">+</div>
+          <div class="tx-info">
+            <div class="tx-label">Transfert depuis carte prepayee</div>
+            <div class="tx-date">23 juillet 2026 a 02:12</div>
+          </div>
+        </div>
+        <div class="tx-amount tx-positive">+419F</div>
+      </div>
+      <div class="tx-item">
+        <div class="tx-left">
+          <div class="tx-icon tx-out">−</div>
+          <div class="tx-info">
+            <div class="tx-label">Paiement BICTORYS CI * Conn</div>
+            <div class="tx-date">23 juillet 2026 a 02:07</div>
+          </div>
+        </div>
+        <div class="tx-amount tx-negative">-2.053F</div>
+      </div>
+      <div class="tx-item">
+        <div class="tx-left">
+          <div class="tx-icon tx-out">−</div>
+          <div class="tx-info">
+            <div class="tx-label">Paiement Boutique Abdoulaye</div>
+            <div class="tx-date">23 juillet 2026 a 01:19</div>
+          </div>
+        </div>
+        <div class="tx-amount tx-negative">-300F</div>
+      </div>
+      <div class="tx-item">
+        <div class="tx-left">
+          <div class="tx-icon tx-in">+</div>
+          <div class="tx-info">
+            <div class="tx-label">Recu de Kouame Jean</div>
+            <div class="tx-date">22 juillet 2026 a 18:45</div>
+          </div>
+        </div>
+        <div class="tx-amount tx-positive">+5.000F</div>
+      </div>
+      <div class="tx-item">
+        <div class="tx-left">
+          <div class="tx-icon tx-out">−</div>
+          <div class="tx-info">
+            <div class="tx-label">Transfert vers Assouma A J M G</div>
+            <div class="tx-date">22 juillet 2026 a 13:00</div>
+          </div>
+        </div>
+        <div class="tx-amount tx-negative">-2.525F</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== QR SCANNER ====== -->
+<div id="screen-qr-scanner" class="screen">
+  <div class="qr-scanner-overlay">
+    <div class="qr-scanner-header">
+      <div class="back-btn" onclick="goTo('screen-home')">
+        <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      </div>
+      <div class="qr-scanner-title">Scanner un QR Code</div>
+    </div>
+    <div class="qr-scanner-frame">
+      <div class="qr-corner qr-corner-tl"></div>
+      <div class="qr-corner qr-corner-tr"></div>
+      <div class="qr-corner qr-corner-bl"></div>
+      <div class="qr-corner qr-corner-br"></div>
+      <div class="qr-laser"></div>
+    </div>
+    <div class="qr-scanner-hint">Placez le QR code dans le cadre</div>
+    <div class="qr-scanner-actions">
+      <div class="qr-action" onclick="showToast('Galerie ouverte')">
+        <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+        <span>Galerie</span>
+      </div>
+      <div class="qr-action" onclick="showToast('Lampe allumee')">
+        <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M6 2h12v3H6zm0 5h12v3H6zm0 5h12v3H6zm0 5h12v3H6z"/></svg>
+        <span>Lampe</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== PROFIL ====== -->
+<div id="screen-profile" class="screen">
+  <div class="page-header">
+    <div class="back-btn" onclick="goTo('screen-home')">
+      <svg viewBox="0 0 24 24" fill="white" width="24" height="24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </div>
+    <div class="page-title">Mon profil</div>
+  </div>
+  <div class="page-body">
+    <div class="profile-header">
+      <div class="profile-avatar">K</div>
+      <div class="profile-name">Kouame Jean</div>
+      <div class="profile-phone">+225 07 12 34 56 78</div>
+    </div>
+    <div class="profile-menu">
+      <div class="profile-item" onclick="showToast('Informations personnelles')">
+        <div class="profile-item-icon">👤</div>
+        <span>Informations personnelles</span>
+        <svg viewBox="0 0 24 24" fill="#999" width="20" height="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </div>
+      <div class="profile-item" onclick="showToast('Limites de transaction')">
+        <div class="profile-item-icon">📊</div>
+        <span>Limites de transaction</span>
+        <svg viewBox="0 0 24 24" fill="#999" width="20" height="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </div>
+      <div class="profile-item" onclick="showToast('Securite')">
+        <div class="profile-item-icon">🔐</div>
+        <span>Securite</span>
+        <svg viewBox="0 0 24 24" fill="#999" width="20" height="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </div>
+      <div class="profile-item" onclick="showToast('Langue')">
+        <div class="profile-item-icon">🌐</div>
+        <span>Langue</span>
+        <span class="profile-item-value">Francais</span>
+      </div>
+      <div class="profile-item" onclick="showToast('Notifications')">
+        <div class="profile-item-icon">🔔</div>
+        <span>Notifications</span>
+        <svg viewBox="0 0 24 24" fill="#999" width="20" height="20"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </div>
+      <div class="profile-item danger" onclick="showToast('Deconnexion')">
+        <div class="profile-item-icon">🚪</div>
+        <span>Deconnexion</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast hidden"></div>
 
 <script src="app.js"></script>
 </body>

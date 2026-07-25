@@ -104,6 +104,13 @@
     </select>
   </div>
   <div class="field-row">
+    <label class="label">Type de compte</label>
+    <select id="su-type" class="field-select">
+      <option value="simple">Compte simple (transferts et paiements)</option>
+      <option value="marchand">Compte marchand (liens de paiement)</option>
+    </select>
+  </div>
+  <div class="field-row">
     <label class="label">Adresse email (Gmail)</label>
     <input id="su-email" class="field" type="email" placeholder="exemple@gmail.com"/>
   </div>
@@ -152,6 +159,9 @@
       <div class="wave-brand-sm">wave</div>
       <div class="top-actions">
         <span id="admin-btn" style="display:none" onclick="renderAdmin()" class="admin-badge">ADMIN</span>
+        <span class="top-icon" onclick="renderSettings()">
+          <svg viewBox="0 0 24 24" fill="rgba(255,255,255,.85)" width="22" height="22"><path d="M19.14 12.94a7.07 7.07 0 000-1.88l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.03 7.03 0 00-1.63-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.58.24-1.13.55-1.63.94l-2.39-.96a.5.5 0 00-.6.22L2.65 8.84a.5.5 0 00.12.64l2.03 1.58a7.07 7.07 0 000 1.88l-2.03 1.58a.5.5 0 00-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.39 1.05.7 1.63.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.24 1.13-.55 1.63-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/></svg>
+        </span>
         <span class="top-icon" onclick="renderProfile()">
           <svg viewBox="0 0 24 24" fill="rgba(255,255,255,.85)" width="22" height="22"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
         </span>
@@ -169,7 +179,7 @@
       <div class="qr-inner">
         <div class="qr-code-box">
           <div id="h-qr" class="qr-canvas-wrap"></div>
-          <button class="scan-btn" onclick="toast('Scanner non disponible dans la démo')">
+          <button class="scan-btn" onclick="openScanner()">
             <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13zm-3 3h1.5v1.5H13V16zm1.5 1.5H16V19h-1.5v-1.5zM16 16h1.5v1.5H16V16zm1.5-1.5H19V16h-1.5v-1.5zm0 3H19V19h-1.5v-1.5zM22 7h-2V4h-3V2h5v5zm0 15v-5h-2v3h-3v2h5zM2 22h5v-2H4v-3H2v5zM2 2v5h2V4h3V2H2z"/></svg>
             Scanner
           </button>
@@ -216,6 +226,12 @@
           <svg viewBox="0 0 24 24" fill="#DB2777" width="28" height="28"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 11.5V16h-2v-2.5C9.5 13 8.5 11.9 8.5 10.5S9.5 8 11 8s2.5 1.1 2.5 2.5S12.5 13 13 13.5zm-1-3.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>
         </div>
         <span>Coffre</span>
+      </div>
+      <div class="action-tile" id="link-tile" style="display:none" onclick="openLink()">
+        <div class="tile-circle" style="background:#CFFAFE">
+          <svg viewBox="0 0 24 24" fill="#0891B2" width="28" height="28"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7a5 5 0 000 10h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4a5 5 0 000-10z"/></svg>
+        </div>
+        <span>Lien paiement</span>
       </div>
       <div class="action-tile" onclick="renderExpenses()">
         <div class="tile-circle" style="background:#E0E7FF">
@@ -474,10 +490,69 @@
   </div>
 </div>
 
+<!-- Scanner QR -->
+<div class="modal" id="m-scan">
+  <div class="modal-bg" onclick="closeScanner()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">Scanner un QR code</h3>
+    <div class="sheet-sub" id="scan-status">Ouverture de la caméra…</div>
+    <div id="scan-reader" class="scan-reader"></div>
+    <button class="btn ghost" style="margin-top:16px" onclick="closeScanner()">Fermer</button>
+  </div>
+</div>
+
+<!-- Bienvenue -->
+<div class="modal" id="m-welcome">
+  <div class="modal-bg"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title" id="wc-title">Bienvenue !</h3>
+    <div class="sheet-sub" id="wc-text"></div>
+    <div class="welcome-qr" id="wc-qr"></div>
+    <button class="btn" style="margin-top:18px" onclick="closeWelcome()">Commencer</button>
+  </div>
+</div>
+
+<!-- ══════════ PARAMÈTRES ══════════ -->
+<div id="s-settings" class="screen">
+  <div class="page-head">
+    <div class="back" onclick="go('s-home')">‹</div>
+    <div class="page-title">Paramètres</div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body bg-body" id="set-body"></div>
+</div>
+
+<!-- Langue -->
+<div class="modal" id="m-lang">
+  <div class="modal-bg" onclick="closeLangSheet()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Langue de l'application</div>
+    <div id="lang-list" style="max-height:55vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- Service client -->
+<div class="modal" id="m-support">
+  <div class="modal-bg" onclick="closeSupport()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Service client</div>
+    <div class="sheet-sub">Notre équipe est disponible 7j/7 de 8h à 22h.</div>
+    <a class="set-item" href="tel:+2250170620767"><div class="set-ic">📞</div><div class="set-mid"><div class="set-t">Appeler Wave</div><div class="set-s">+225 01 70 62 07 67</div></div><span class="set-caret">›</span></a>
+    <a class="set-item" href="https://wa.me/2250170620767" target="_blank" rel="noopener"><div class="set-ic">💬</div><div class="set-mid"><div class="set-t">WhatsApp</div><div class="set-s">Chat instantané</div></div><span class="set-caret">›</span></a>
+    <a class="set-item" href="mailto:support@wave.com"><div class="set-ic">✉️</div><div class="set-mid"><div class="set-t">Email</div><div class="set-s">support@wave.com</div></div><span class="set-caret">›</span></a>
+    <button class="btn ghost" style="margin-top:14px" onclick="closeSupport()">Fermer</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 </div><!-- #app -->
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="vendor/qrcode.min.js"></script>
+<script src="vendor/html5-qrcode.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

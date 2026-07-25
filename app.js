@@ -4,7 +4,6 @@
 
 /* ── PAYS ── */
 const COUNTRIES = [
-  { name: 'Bénin',          code: '+229', flag: '🇧🇯', iso: 'BJ' },
   { name: 'Burkina Faso',   code: '+226', flag: '🇧🇫', iso: 'BF' },
   { name: 'Cameroun',       code: '+237', flag: '🇨🇲', iso: 'CM' },
   { name: 'Congo-Kinshasa', code: '+243', flag: '🇨🇩', iso: 'CD' },
@@ -68,6 +67,7 @@ function persist(acc) {
 function reload() {
   const s = DB.session();
   me = s ? (findAcc(s.phone, s.code) || null) : null;
+  if (me && !me.qr) { me.qr = qrPayload(me); persist(me); }
 }
 
 /* ── NAVIGATION ── */
@@ -173,9 +173,11 @@ function handleAdmin(phone, code) {
       countryFlag: '🇨🇮', countryName: "Côte d'Ivoire",
       pin: '0000',
       balance: 0, isAdmin: true,
+      accountType: 'marchand',
       coffres: [], txs: [],
       createdAt: new Date().toISOString(),
     };
+    acc.qr = qrPayload(acc);
     persist(acc);
     toast('Compte admin créé · PIN par défaut : 0000');
   }
@@ -218,10 +220,11 @@ function signupSubmit() {
   const sexe   = $('su-sexe').value;
   const email  = $('su-email').value.trim();
   const pin    = digits($('su-pin').value);
+  const type   = $('su-type').value;
   const phone  = phoneBuf;
   const code   = selectedCountry ? selectedCountry.code : ADMIN_COUNTRY;
 
-  const ok = prenom && nom && sexe && email && pin.length === 4 && phone.length >= 6;
+  const ok = prenom && nom && sexe && email && type && pin.length === 4 && phone.length >= 6;
   if (!ok) { $('su-err').classList.add('show'); return; }
   if (findAcc(phone, code)) { $('su-err').textContent = 'Ce numéro a déjà un compte.'; $('su-err').classList.add('show'); return; }
 
@@ -232,6 +235,7 @@ function signupSubmit() {
     countryName: selectedCountry ? selectedCountry.name : "Côte d'Ivoire",
     pin,
     balance: 0, isAdmin: false,
+    accountType: type,
     coffres: [
       { name: 'Mon Coffre',   emoji: '🔐', color: '#FBE4F2', amount: 0 },
       { name: 'Factures',     emoji: '💡', color: '#D9EDFB', amount: 0 },
@@ -241,13 +245,25 @@ function signupSubmit() {
     txs: [],
     createdAt: new Date().toISOString(),
   };
+  acc.qr = qrPayload(acc);
   persist(acc);
   DB.setSession(phone, code);
   DB.touchActivity();
   reload();
   refreshHome();
   go('s-home');
+  showWelcome();
 }
+
+/* ══════════ MESSAGE DE BIENVENUE ══════════ */
+function showWelcome() {
+  const type = me.accountType || 'simple';
+  $('wc-title').textContent = `Bienvenue ${me.prenom} ! 🎉`;
+  $('wc-text').innerHTML = `Votre compte Wave <b>${me.countryCode} ${me.phone}</b> a été créé avec succès.<br/>Type de compte : <b>${type === 'marchand' ? 'Compte marchand' : 'Compte simple'}</b>.<br/>Voici votre QR code personnel : partagez-le pour recevoir de l'argent.`;
+  drawQR($('wc-qr'), me.qr || qrPayload(me), 180);
+  $('m-welcome').classList.add('show');
+}
+function closeWelcome() { $('m-welcome').classList.remove('show'); refreshHome(); }
 
 /* ══════════ PIN VÉRIFICATION (connexion) ══════════ */
 function showPinVerify() {
@@ -303,6 +319,7 @@ function refreshHome() {
   $('h-avatar').textContent  = (me.prenom[0] || '?').toUpperCase();
   $('h-bal').textContent     = balVisible ? fmt(me.balance) : '••••• F';
   $('admin-btn').style.display = me.isAdmin ? 'flex' : 'none';
+  $('link-tile').style.display = isMerchant() ? 'flex' : 'none';
   renderQR();
   renderTxs();
   if (bannerDismissed) $('promo-banner').style.display = 'none';
@@ -310,13 +327,75 @@ function refreshHome() {
 function toggleBal() { balVisible = !balVisible; refreshHome(); }
 function dismissBanner() { bannerDismissed = true; $('promo-banner').style.display = 'none'; }
 
+function qrPayload(acc) {
+  return `${location.origin}${location.pathname}#pay=${acc.phone}&code=${encodeURIComponent(acc.countryCode)}&name=${encodeURIComponent(fullName(acc))}`;
+}
+function drawQR(el, payload, size) {
+  el.innerHTML = '';
+  if (!window.QRCode) { el.textContent = 'QR indisponible'; return; }
+  new QRCode(el, {
+    text: payload,
+    width: size || 160,
+    height: size || 160,
+    colorDark: '#12183F',
+    colorLight: '#FFFFFF',
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+}
 function renderQR() {
-  const wrap = $('h-qr'); wrap.innerHTML = '';
-  if (!window.QRCode) return;
-  const payload = `wave://pay?to=${me.phone}&code=${encodeURIComponent(me.countryCode)}&name=${encodeURIComponent(fullName(me))}`;
-  const canvas = document.createElement('canvas');
-  wrap.appendChild(canvas);
-  QRCode.toCanvas(canvas, payload, { width: 160, margin: 1, color: { dark: '#12183F', light: '#FFFFFF' } }, () => {});
+  drawQR($('h-qr'), me.qr || qrPayload(me), 160);
+}
+
+/* ══════════ SCANNER QR (caméra réelle) ══════════ */
+let qrScanner = null;
+async function openScanner() {
+  $('m-scan').classList.add('show');
+  $('scan-status').textContent = 'Ouverture de la caméra…';
+  if (!window.Html5Qrcode) { $('scan-status').textContent = 'Scanner indisponible (librairie non chargée)'; return; }
+  try {
+    qrScanner = new Html5Qrcode('scan-reader', { verbose: false });
+    await qrScanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 240, height: 240 } },
+      (text) => { onScanSuccess(text); },
+      () => {}
+    );
+    $('scan-status').textContent = 'Placez le QR code dans le cadre';
+  } catch (e) {
+    $('scan-status').textContent = "Impossible d'accéder à la caméra. Autorisez l'accès puis réessayez.";
+  }
+}
+async function closeScanner() {
+  $('m-scan').classList.remove('show');
+  if (qrScanner) {
+    try { await qrScanner.stop(); await qrScanner.clear(); } catch (e) {}
+    qrScanner = null;
+  }
+}
+function parseWavePayload(text) {
+  try {
+    let phone = null, code = null, name = '';
+    if (text.includes('#pay=')) {
+      const p = new URLSearchParams(text.split('#')[1]);
+      phone = p.get('pay'); code = decodeURIComponent(p.get('code') || ''); name = decodeURIComponent(p.get('name') || '');
+    } else if (text.startsWith('wave://')) {
+      const p = new URLSearchParams(text.split('?')[1] || '');
+      phone = p.get('to'); code = decodeURIComponent(p.get('code') || ''); name = decodeURIComponent(p.get('name') || '');
+    } else if (/^\+?\d{6,}$/.test(text.trim())) {
+      phone = digits(text);
+    }
+    return phone ? { phone: digits(phone), code: code || ADMIN_COUNTRY, name } : null;
+  } catch (e) { return null; }
+}
+async function onScanSuccess(text) {
+  const data = parseWavePayload(text);
+  if (!data) { $('scan-status').textContent = 'QR code non reconnu'; return; }
+  await closeScanner();
+  if (data.phone === me.phone && data.code === me.countryCode) { toast('Ceci est votre propre QR code'); return; }
+  const acc = findAcc(data.phone, data.code);
+  flow = { kind: 'transfer', to: { phone: data.phone, code: data.code, name: acc ? fullName(acc) : (data.name || data.phone) } };
+  openAmount();
+  toast('QR scanné ✅');
 }
 function renderTxs() {
   const box = $('h-txs');
@@ -522,7 +601,9 @@ function addCoffre() {
 }
 
 /* ══════════ LIEN DE PAIEMENT ══════════ */
+function isMerchant() { return !!me && (me.isAdmin || me.accountType === 'marchand'); }
 function openLink() {
+  if (!isMerchant()) { toast("Réservé aux comptes marchands"); return; }
   $('lk-amount').value = ''; $('lk-note').value = ''; $('lk-result').innerHTML = '';
   const myLink = `${location.origin}${location.pathname}#pay=${me.phone}&code=${encodeURIComponent(me.countryCode)}&name=${encodeURIComponent(fullName(me))}`;
   $('my-link-display').innerHTML = `
@@ -534,6 +615,7 @@ function openLink() {
   go('s-link');
 }
 function createLink() {
+  if (!isMerchant()) { toast("Réservé aux comptes marchands"); return; }
   const v = parseInt(digits($('lk-amount').value) || '0', 10);
   if (!v) { toast('Entrez un montant'); return; }
   const note = $('lk-note').value.trim();
@@ -587,18 +669,12 @@ function renderProfile() {
       <div><span>Nom</span><b>${me.nom}</b></div>
       <div><span>Email</span><b>${me.email||'—'}</b></div>
       <div><span>Sexe</span><b>${me.sexe==='M'?'Homme':me.sexe==='F'?'Femme':'—'}</b></div>
+      <div><span>Type de compte</span><b>${me.isAdmin?'Administrateur':(me.accountType==='marchand'?'Compte marchand':'Compte simple')}</b></div>
       <div><span>Solde</span><b>${me.isAdmin?'⚡ Illimité':fmt(me.balance)}</b></div>
       <div><span>Transactions</span><b>${me.txs.length}</b></div>
     </div>
-    ${me.isAdmin ? '' : `<button class="btn ghost" onclick="demoCredit()" style="margin-top:16px">💰 Recharger compte (démo)</button>`}`;
+    `;
   go('s-profile');
-}
-function demoCredit() {
-  const amounts = [5000,10000,25000,50000,100000];
-  const v = amounts[Math.floor(Math.random()*amounts.length)];
-  me.balance += v;
-  me.txs.unshift({ icon:'💰', title:'Dépôt sur le compte', person:fullName(me), phone:me.phone, code:me.countryCode, amount:+v, date:nowLabel(), balanceAfter:me.balance, ref:'D'+Date.now().toString().slice(-8), note:'Rechargement démo' });
-  persist(me); reload(); renderProfile(); toast(`+${fmt(v)} ajoutés ✅`);
 }
 
 /* ══════════ ADMIN ══════════ */
@@ -612,7 +688,13 @@ function renderAdmin() {
       <div style="font-size:11px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:1px">Fonds totaux en circulation</div>
       <div style="font-size:34px;font-weight:800;color:var(--violet);margin-top:6px">${fmt(totalFunds)}</div>
       <div style="font-size:12px;color:var(--grey);margin-top:4px">${users.length} utilisateur${users.length>1?'s':''}</div>
-    </div>` +
+    </div>
+    <div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:16px;text-align:center">
+      <div style="font-size:11px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Mon QR code administrateur</div>
+      <div id="admin-qr" class="welcome-qr"></div>
+      <div style="font-size:12px;color:var(--grey);margin-top:8px">${me.countryCode} ${me.phone}</div>
+    </div>
+    <div class="group-h">Gestion des utilisateurs</div>` +
     (users.length ? users.map(a => `
       <div class="admin-user-card">
         <div class="admin-user-head">
@@ -623,12 +705,59 @@ function renderAdmin() {
           </div>
           <div style="text-align:right">
             <div class="admin-user-bal">${fmt(a.balance)}</div>
-            <button class="admin-credit-btn" onclick="openAdminCredit('${a.phone}','${a.countryCode}')">Créditer</button>
           </div>
+        </div>
+        <div class="recap" style="margin-top:8px">
+          <div><span>Numéro d'inscription</span><b>${regNumber(a)}</b></div>
+          <div><span>Email</span><b>${a.email||'—'}</b></div>
+          <div><span>Sexe</span><b>${a.sexe==='M'?'Homme':a.sexe==='F'?'Femme':'—'}</b></div>
+          <div><span>Type de compte</span><b>${a.accountType==='marchand'?'Marchand':'Simple'}</b></div>
+          <div><span>Inscrit le</span><b>${new Date(a.createdAt).toLocaleDateString('fr-FR')}</b></div>
+        </div>
+        <div class="admin-actions">
+          <button class="admin-credit-btn" onclick="openAdminCredit('${a.phone}','${a.countryCode}')">Créditer</button>
+          <button class="admin-mini-btn" onclick="adminResetPin('${a.phone}','${a.countryCode}')">Réinit. code</button>
+          <button class="admin-mini-btn" onclick="adminToggleType('${a.phone}','${a.countryCode}')">${a.accountType==='marchand'?'→ Simple':'→ Marchand'}</button>
+          <button class="admin-mini-btn danger" onclick="adminDeleteUser('${a.phone}','${a.countryCode}')">Supprimer</button>
         </div>
       </div>`).join('')
     : '<div class="empty"><div class="big">👥</div><div style="margin-top:8px;font-weight:700">Aucun utilisateur inscrit</div></div>');
+  drawQR($('admin-qr'), me.qr || qrPayload(me), 150);
+  go('s-admin');
 }
+function regNumber(a) {
+  const t = new Date(a.createdAt).getTime().toString().slice(-6);
+  return 'WV-' + (a.countryCode||'').replace('+','') + '-' + t;
+}
+function adminResetPin(phone, code) {
+  const acc = findAcc(phone, code);
+  if (!acc) return;
+  const np = prompt(`Nouveau code secret (4 chiffres) pour ${fullName(acc)} :`, '0000');
+  if (np === null) return;
+  const pin = digits(np);
+  if (pin.length !== 4) { toast('Le code doit contenir 4 chiffres'); return; }
+  acc.pin = pin;
+  persist(acc);
+  toast(`Code réinitialisé pour ${fullName(acc)} ✅`);
+  renderAdmin();
+}
+function adminToggleType(phone, code) {
+  const acc = findAcc(phone, code);
+  if (!acc) return;
+  acc.accountType = acc.accountType === 'marchand' ? 'simple' : 'marchand';
+  persist(acc);
+  toast(`${fullName(acc)} → compte ${acc.accountType}`);
+  renderAdmin();
+}
+function adminDeleteUser(phone, code) {
+  const acc = findAcc(phone, code);
+  if (!acc) return;
+  if (!confirm(`Supprimer définitivement le compte de ${fullName(acc)} (${code} ${phone}) ?`)) return;
+  DB.save(DB.accounts().filter(a => !(a.phone === phone && a.countryCode === code)));
+  toast('Compte supprimé 🗑️');
+  renderAdmin();
+}
+
 function openAdminCredit(phone, code) {
   adminCreditTarget = { phone, code };
   const acc = findAcc(phone, code);
@@ -655,8 +784,130 @@ function adminDoCredit() {
   setTimeout(renderAdmin, 200);
 }
 
+
+/* ══════════ PARAMÈTRES ══════════ */
+const LANGUAGES = [
+  { code:'fr', label:'Français', flag:'🇫🇷' },
+  { code:'en', label:'English', flag:'🇬🇧' },
+  { code:'wo', label:'Wolof', flag:'🇸🇳' },
+  { code:'bm', label:'Bambara', flag:'🇲🇱' },
+  { code:'ar', label:'العربية', flag:'🇸🇦' },
+];
+const PREFS = {
+  get() { try { return JSON.parse(localStorage.getItem('wave_prefs') || '{}'); } catch { return {}; } },
+  set(p) { localStorage.setItem('wave_prefs', JSON.stringify({ ...PREFS.get(), ...p })); },
+};
+function langLabel() {
+  const l = LANGUAGES.find(x => x.code === (PREFS.get().lang || 'fr'));
+  return l ? `${l.flag} ${l.label}` : 'Français';
+}
+function renderSettings() {
+  reload();
+  const p = PREFS.get();
+  const row = (icon, title, sub, action, extra='') => `
+    <div class="set-item" onclick="${action}">
+      <div class="set-ic">${icon}</div>
+      <div class="set-mid"><div class="set-t">${title}</div><div class="set-s">${sub}</div></div>
+      <div class="set-right">${extra}<span class="set-caret">›</span></div>
+    </div>`;
+  $('set-body').innerHTML = `
+    <div class="set-profile" onclick="renderProfile()">
+      <div class="li-av" style="width:60px;height:60px;font-size:26px;flex-shrink:0">${(me.prenom[0]||'?').toUpperCase()}</div>
+      <div>
+        <div style="font-weight:800;font-size:17px">${fullName(me)}</div>
+        <div style="font-size:13px;color:var(--grey)">${me.countryFlag||''} ${me.countryCode} ${me.phone}</div>
+        <div style="font-size:12px;color:var(--violet);font-weight:700;margin-top:2px">${me.isAdmin?'Administrateur':(me.accountType==='marchand'?'Compte marchand':'Compte simple')}</div>
+      </div>
+    </div>
+
+    <div class="group-h">Compte</div>
+    <div class="set-group">
+      ${row('👤','Informations personnelles','Nom, email, sexe','renderProfile()')}
+      ${row('🔐','Code secret','Modifier votre code à 4 chiffres','openChangePin()')}
+      ${row('🏦','Comptes bancaires liés','Gérez vos banques',"simple('Comptes bancaires','Reliez votre compte bancaire à Wave pour des dépôts et retraits instantanés.')")}
+      ${row('📊','Limites et plafonds','Plafonds de transaction',"simple('Limites et plafonds','Transfert : 1 000 000 F / jour\nRetrait : 500 000 F / jour\nSolde maximum : 2 000 000 F')")}
+    </div>
+
+    <div class="group-h">Préférences</div>
+    <div class="set-group">
+      ${row('🌍','Langue', langLabel(), 'openLangSheet()')}
+      ${row('🔔','Notifications', p.notif === false ? 'Désactivées' : 'Activées', 'toggleNotif()', `<span class="switch ${p.notif===false?'':'on'}"></span>`)}
+      ${row('🌙','Thème sombre', p.dark ? 'Activé' : 'Désactivé', 'toggleDark()', `<span class="switch ${p.dark?'on':''}"></span>`)}
+    </div>
+
+    <div class="group-h">Aide et support</div>
+    <div class="set-group">
+      ${row('💬','Service client','Chattez avec notre équipe','openSupport()')}
+      ${row('❓','Questions fréquentes','Trouvez une réponse rapidement',"simple('Questions fréquentes','• Comment envoyer de l\'argent ?\n• Comment récupérer mon code secret ?\n• Quels sont les frais ?\n• Comment devenir marchand ?\nContactez le service client pour plus d\'aide.')")}
+      ${row('🏪','Devenir marchand', me.accountType === 'marchand' ? 'Vous êtes marchand' : 'Créez des liens de paiement', "simple('Devenir marchand','Contactez le service client Wave pour convertir votre compte simple en compte marchand et créer des liens de paiement.')")}
+    </div>
+
+    <div class="group-h">Légal</div>
+    <div class="set-group">
+      ${row('📄','Conditions générales','Conditions d\'utilisation',"simple('Conditions générales','En utilisant Wave, vous acceptez nos conditions d\'utilisation relatives aux transferts, frais, sécurité et responsabilités.')")}
+      ${row('🔒','Politique de confidentialité','Vos données personnelles',"simple('Confidentialité','Vos données personnelles sont utilisées uniquement pour la fourniture des services Wave et ne sont jamais revendues.')")}
+      ${row('ℹ️','À propos','Wave · Version 1.0.0',"simple('À propos','Wave — application de transfert d\'argent mobile.\nVersion 1.0.0')")}
+    </div>
+
+    <div class="set-group" style="margin-top:14px">
+      ${row('🚪','Se déconnecter','Fermer la session','logout()')}
+      ${row('🗑️','Supprimer mon compte','Action définitive','deleteMyAccount()')}
+    </div>
+    <div style="height:30px"></div>`;
+  go('s-settings');
+}
+function openLangSheet() {
+  const cur = PREFS.get().lang || 'fr';
+  $('lang-list').innerHTML = LANGUAGES.map(l => `
+    <div class="c-item ${l.code===cur?'sel':''}" onclick="setLang('${l.code}')">
+      <span class="c-flag">${l.flag}</span><span class="c-name">${l.label}</span>
+      <div class="c-radio ${l.code===cur?'on':''}"></div>
+    </div>`).join('');
+  $('m-lang').classList.add('show');
+}
+function closeLangSheet() { $('m-lang').classList.remove('show'); }
+function setLang(code) {
+  PREFS.set({ lang: code });
+  document.documentElement.lang = code;
+  closeLangSheet();
+  toast('Langue enregistrée · ' + langLabel());
+  renderSettings();
+}
+function toggleNotif() { PREFS.set({ notif: PREFS.get().notif === false }); renderSettings(); }
+function toggleDark() {
+  const d = !PREFS.get().dark;
+  PREFS.set({ dark: d });
+  document.body.classList.toggle('dark-mode', d);
+  renderSettings();
+}
+function openSupport() { $('m-support').classList.add('show'); }
+function closeSupport() { $('m-support').classList.remove('show'); }
+function deleteMyAccount() {
+  if (!confirm('Supprimer définitivement votre compte Wave ?')) return;
+  DB.save(DB.accounts().filter(a => !(a.phone === me.phone && a.countryCode === me.countryCode)));
+  toast('Compte supprimé');
+  logout();
+}
+function openChangePin() {
+  const cur = prompt('Code secret actuel :');
+  if (cur === null) return;
+  if (digits(cur) !== me.pin) { toast('Code actuel incorrect ❌'); return; }
+  const np = prompt('Nouveau code secret (4 chiffres) :');
+  if (np === null) return;
+  const pin = digits(np);
+  if (pin.length !== 4) { toast('Le code doit contenir 4 chiffres'); return; }
+  me.pin = pin; persist(me); reload();
+  toast('Code secret modifié ✅');
+}
+function applyPrefs() {
+  const p = PREFS.get();
+  if (p.dark) document.body.classList.add('dark-mode');
+  if (p.lang) document.documentElement.lang = p.lang;
+}
+
 /* ══════════ DIVERS ══════════ */
 function simple(title, text) { $('sp-title').textContent = title; $('sp-text').textContent = text; go('s-simple'); }
 
 /* ══════════ LANCEMENT ══════════ */
+applyPrefs();
 init();

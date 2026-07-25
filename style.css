@@ -74,14 +74,18 @@ html, body {
   margin-bottom: 2px;
 }
 
+.balance-wrap { min-height: 46px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
 .balance-amount {
   color: #fff;
   font-size: 34px;
   font-weight: 700;
   text-align: center;
-  margin-bottom: 16px;
   letter-spacing: 0.5px;
 }
+.balance-mask { display: flex; align-items: center; gap: 6px; }
+.mask-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; }
+.mask-sep { width: 6px; }
+.mask-unit { color: #fff; font-size: 24px; font-weight: 700; margin-left: 10px; }
 
 /* QR Card */
 .qr-card {
@@ -966,3 +970,125 @@ html, body {
 /* Scrollbar hide */
 ::-webkit-scrollbar { display: none; }
 * { scrollbar-width: none; }
+
+/* ===== LOGIN ===== */
+.login-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 60px 24px 24px;
+  background: linear-gradient(160deg, #0D47A1 0%, #1565C0 60%, #1E88E5 100%);
+  color: #fff;
+  min-height: 100%;
+}
+.login-logo {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.login-tagline {
+  font-size: 15px;
+  opacity: 0.85;
+  margin-bottom: 40px;
+  max-width: 280px;
+  line-height: 1.4;
+}
+.login-form {
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px 20px;
+  color: var(--text-dark);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+}
+.login-label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-mid);
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.login-phone-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 2px solid #E0E0E0;
+  padding-bottom: 10px;
+}
+.login-phone-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 18px;
+  padding: 6px 0;
+  background: transparent;
+  color: var(--text-dark);
+}
+.btn-login {
+  width: 100%;
+  margin-top: 24px;
+  padding: 15px;
+  border: none;
+  border-radius: 30px;
+  background: #1565C0;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-login:active { transform: scale(0.98); }
+.login-legal {
+  margin-top: 16px;
+  font-size: 11px;
+  text-align: center;
+  color: var(--text-light);
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-light);
+}
+.empty-state.small { padding: 20px; }
+.empty-icon { font-size: 42px; margin-bottom: 10px; }
+.empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-mid);
+  margin-bottom: 4px;
+}
+.empty-desc { font-size: 13px; color: var(--text-light); line-height: 1.4; }
+
+/* ===== BANK LOGOS ===== */
+.bank-logo {
+  width: 48px; height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  overflow: hidden;
+}
+.bank-mono {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-align: center;
+  line-height: 1;
+  padding: 0 4px;
+  text-transform: uppercase;
+}
+
+/* ===== CARD EMPTY ===== */
+.card-empty {
+  padding: 50px 20px;
+  text-align: center;
+}
+.card-empty-emoji { font-size: 60px; margin-bottom: 12px; }
+.card-empty-title { font-size: 18px; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; }
+.card-empty-desc { font-size: 14px; color: var(--text-mid); line-height: 1.5; max-width: 280px; margin: 0 auto; }
+
+/* Ensure login screen fills */
+#screen-login.active { background: #0D47A1; }

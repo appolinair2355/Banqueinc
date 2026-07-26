@@ -1,0 +1,26 @@
+/* ── PayZone Afrique – Portail ── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(160deg,#f0f4ff 0%,#e8edf8 100%);min-height:100vh;color:#1e293b}
+a{text-decoration:none;color:inherit}
+
+/* Header */
+.portal-header{text-align:center;padding:48px 24px 32px}
+.portal-logo{width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 8px 24px rgba(99,102,241,.35)}
+.portal-logo svg{width:36px;height:36px}
+.portal-title{font-size:26px;font-weight:900;letter-spacing:-.5px;color:#0f172a}
+.portal-sub{margin-top:6px;font-size:14px;color:#64748b}
+
+/* Grid */
+.portal-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:440px;margin:0 auto;padding:0 16px 48px}
+.bank-card{border-radius:22px;padding:22px 18px 20px;display:flex;flex-direction:column;justify-content:space-between;min-height:160px;box-shadow:0 6px 24px rgba(0,0,0,.12);transition:transform .15s,box-shadow .15s;cursor:pointer;position:relative;overflow:hidden}
+.bank-card:active{transform:scale(.96)}
+.bank-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.12) 0%,transparent 60%);pointer-events:none}
+.bank-card-logo{width:60px;height:60px}
+.bank-card-name{font-size:17px;font-weight:900;line-height:1.15;margin-top:auto}
+.bank-card-tag{font-size:11px;opacity:.75;margin-top:3px;font-weight:500}
+
+/* Footer */
+.portal-footer{text-align:center;padding-bottom:32px;font-size:12px;color:#94a3b8}
+
+/* Section label */
+.section-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;padding:0 16px;max-width:440px;margin:0 auto 10px}

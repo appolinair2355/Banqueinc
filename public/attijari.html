@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>Attijari Wafabank — PayZone Afrique</title>
+<link rel="stylesheet" href="bank.css"/>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="bk-header" style="background:linear-gradient(145deg,#C8102E,#8a0010)">
+  <div class="bk-topbar">
+    <a class="bk-back" href="index.html" style="color:white">←</a>
+    <div class="bk-brand">
+      <!-- Attijari logo inline -->
+      <svg width="36" height="36" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="35" cy="35" r="32" fill="white"/>
+        <g transform="translate(35,35)">
+          <ellipse rx="9" ry="20" fill="#C8102E"/>
+          <ellipse rx="9" ry="20" transform="rotate(45)" fill="#C8102E"/>
+          <ellipse rx="9" ry="20" transform="rotate(90)" fill="#C8102E"/>
+          <ellipse rx="9" ry="20" transform="rotate(135)" fill="#C8102E"/>
+        </g>
+        <circle cx="35" cy="35" r="11" fill="white"/>
+        <circle cx="35" cy="35" r="6" fill="#F7941D"/>
+      </svg>
+      <span class="bk-brand-name" style="color:white">Attijari Wafabank</span>
+    </div>
+    <div class="bk-avatar">👤</div>
+  </div>
+  <div class="bk-balance-wrap" style="color:white">
+    <div class="bk-bal-label">Solde disponible</div>
+    <div class="bk-bal-row">
+      <span class="bk-bal-amount" id="bal-display">•••••• F</span>
+      <button id="btn-toggle-bal" id="bal-eye" style="background:none;border:none;cursor:pointer;font-size:20px;opacity:.8;color:white" aria-label="Afficher/masquer">👁</button>
+    </div>
+    <div style="font-size:12px;opacity:.7;margin-top:4px">Banque nouvelle génération</div>
+  </div>
+</div>
+
+<!-- ── Contenu flottant ── -->
+<div class="bk-content">
+
+  <!-- Actions -->
+  <div class="actions-card">
+    <div class="action-btn" id="btn-send">
+      <div class="action-ic" style="background:#fee2e2"><span style="font-size:22px">↗</span></div>
+      <span class="action-label">Envoyer</span>
+    </div>
+    <div class="action-btn" id="btn-recv">
+      <div class="action-ic" style="background:#fee2e2"><span style="font-size:22px">↙</span></div>
+      <span class="action-label">Recevoir</span>
+    </div>
+    <div class="action-btn" id="btn-bill">
+      <div class="action-ic" style="background:#fee2e2"><span style="font-size:22px">🧾</span></div>
+      <span class="action-label">Factures</span>
+    </div>
+    <div class="action-btn" id="btn-withdraw">
+      <div class="action-ic" style="background:#fee2e2"><span style="font-size:22px">🏧</span></div>
+      <span class="action-label">Retrait</span>
+    </div>
+  </div>
+
+  <!-- Comptes -->
+  <div class="acc-cards">
+    <div class="acc-card">
+      <div class="acc-card-type">Compte courant</div>
+      <div class="acc-card-num">**** 3421</div>
+      <div class="acc-card-bal" id="card-balance">— F</div>
+    </div>
+    <div class="acc-card">
+      <div class="acc-card-type">Épargne</div>
+      <div class="acc-card-num">**** 8890</div>
+      <div class="acc-card-bal">0 F</div>
+    </div>
+  </div>
+
+  <!-- Transactions -->
+  <div class="tx-section">
+    <div class="tx-head">
+      <span class="tx-head-title">Transactions</span>
+      <span class="tx-head-sub">Historique</span>
+    </div>
+    <div class="tx-list-wrap" id="tx-list"></div>
+  </div>
+
+  <div class="bk-footer">Attijari Wafabank — Powered by PayZone Afrique</div>
+</div>
+
+<!-- ── Modal ── -->
+<div class="modal" id="tx-modal">
+  <div class="modal-bg" id="modal-bg"></div>
+  <div class="modal-sheet" id="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-inner">
+      <div class="modal-hdr">
+        <span class="modal-title" id="modal-title">Opération</span>
+        <span class="modal-close" id="modal-close">×</span>
+      </div>
+      <div class="modal-label-row" id="modal-label-row">
+        <div class="modal-field-label" id="modal-label-title">Bénéficiaire</div>
+        <input class="modal-input" id="modal-label" placeholder="Nom / N° compte"/>
+      </div>
+      <div class="modal-field-label">Montant (FCFA)</div>
+      <input class="modal-input" id="modal-amount" type="number" placeholder="0" style="font-size:22px;font-weight:700;margin-top:6px"/>
+      <button class="modal-btn" id="modal-submit" style="color:white">Valider</button>
+    </div>
+  </div>
+</div>
+
+<script src="bank.js"></script>
+<script>
+initBankApp({
+  key: 'attijari',
+  primary: '#C8102E',
+  onPrimary: '#ffffff',
+  accent: '#fee2e2'
+});
+</script>
+</body>
+</html>

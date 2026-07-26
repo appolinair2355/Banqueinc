@@ -88,7 +88,7 @@ function toast(msg, dur = 2500) {
 /* ══════════ SPLASH + DÉMARRAGE ══════════ */
 function init() {
   // Splash : 5 secondes puis lancement
-  setTimeout(afterSplash, 5000);
+  setTimeout(afterSplash, 0);
 
   // Suivi activité (reset inactivité)
   document.addEventListener('click', DB.touchActivity);

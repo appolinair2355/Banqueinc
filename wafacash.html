@@ -3,59 +3,192 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Wafacash — PayZone Afrique</title>
-<meta name="description" content="Envoyez et recevez de l'argent partout avec Wafacash."/>
+<title>Wafacash — Transfert d'argent</title>
+<meta name="description" content="Wafacash — Envoyez et recevez de l'argent à l'international, paiement de factures et recharges."/>
 <link rel="icon" href="favicon.ico"/>
-<link rel="stylesheet" href="style.css"/>
+<style>
+:root{--green:#00A651;--green-d:#007a3d;--yellow:#FFD100;--dark:#1F2937;--muted:#6B7280;--bg:#F9FAFB;--line:#E5E7EB}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:#111}
+body{font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;color:var(--dark)}
+.app{max-width:440px;margin:0 auto;min-height:100vh;background:#fff;padding-bottom:70px}
+.head{background:linear-gradient(135deg,var(--green) 0%,var(--green-d) 100%);padding:14px 18px 0;color:#fff;position:relative}
+.headtop{display:flex;justify-content:space-between;align-items:center}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:22px;letter-spacing:-.5px}
+.logo .dot{width:26px;height:26px;background:var(--yellow);border-radius:50%;display:inline-block;position:relative}
+.logo .dot::after{content:"";position:absolute;inset:6px;background:var(--green);border-radius:50%}
+.htools{display:flex;gap:14px;font-size:20px}
+.hero{padding:22px 0 18px}
+.hero h1{margin:0;font-size:22px;font-weight:800;line-height:1.25}
+.hero p{margin:6px 0 0;font-size:13px;opacity:.9}
+.bal-card{background:#fff;color:var(--dark);border-radius:16px;padding:16px;margin:0 -2px;box-shadow:0 8px 24px -12px rgba(0,0,0,.4);position:relative;top:14px}
+.bal-card .lb{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.bal-card .v{font-size:30px;font-weight:800;margin-top:4px;letter-spacing:-1px}
+.bal-card .v .u{font-size:14px;color:var(--muted);margin-left:4px;font-weight:600}
+.bal-card .eye{position:absolute;right:16px;top:16px;font-size:18px;cursor:pointer;color:var(--muted)}
+.body{padding:24px 16px 16px}
+.svc-h{font-weight:800;font-size:15px;margin:0 0 12px}
+.services{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.svc{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 6px;text-align:center;cursor:pointer;transition:transform .12s}
+.svc:active{transform:scale(.94)}
+.svc .i{width:44px;height:44px;border-radius:50%;background:#E7F7EE;color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:20px}
+.svc .t{font-size:11px;font-weight:700;line-height:1.2}
+.promo{margin:20px 16px;background:linear-gradient(135deg,#FFF9DB 0%,#FFECB3 100%);border-radius:16px;padding:18px;display:flex;align-items:center;gap:14px;border:1px solid #FFE082}
+.promo .em{font-size:36px}
+.promo .tx{font-size:13px;font-weight:700;line-height:1.35}
+.promo .tx span{color:var(--green-d)}
+.tx-h{display:flex;justify-content:space-between;align-items:center;padding:0 16px 8px}
+.tx-h h3{margin:0;font-size:15px;font-weight:800}
+.tx-h a{color:var(--green);font-size:13px;font-weight:700;text-decoration:none}
+.txs{padding:0 16px}
+.tx{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.tx:first-child{border-top:0}
+.tx .ic{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.tx .ic.in{background:#E7F7EE;color:var(--green)}
+.tx .ic.out{background:#FEE2E2;color:#DC2626}
+.tx .mid{flex:1;min-width:0}
+.tx .mid .t{font-weight:700;font-size:14px}
+.tx .mid .d{color:var(--muted);font-size:12px;margin-top:2px}
+.tx .a{font-weight:800;font-size:14px;white-space:nowrap}
+.tx .a.in{color:var(--green)}
+.tx .a.out{color:var(--dark)}
+.tabbar{position:fixed;bottom:0;left:0;right:0;max-width:440px;margin:0 auto;background:#fff;border-top:1px solid var(--line);display:flex;padding:8px 4px 16px;z-index:10}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted);cursor:pointer;font-weight:600;background:none;border:0;padding:6px}
+.tb.on{color:var(--green)}
+.tb .i{font-size:20px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal.on{opacity:1;pointer-events:auto}
+.sheet{width:100%;max-width:440px;background:#fff;border-radius:22px 22px 0 0;padding:20px 20px 26px;transform:translateY(20px);transition:transform .25s;position:relative}
+.modal.on .sheet{transform:translateY(0)}
+.sheet h3{margin:0 0 14px;font-size:18px;font-weight:800}
+.sheet label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px;font-weight:600}
+.sheet input,.sheet select{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:12px;font-size:16px;font-family:inherit;outline:none;background:#fff}
+.sheet input:focus{border-color:var(--green)}
+.sheet .btn{width:100%;background:var(--green);color:#fff;border:0;padding:16px;border-radius:12px;font-size:16px;font-weight:700;margin-top:16px;cursor:pointer}
+.sheet .close{position:absolute;right:16px;top:14px;background:none;border:0;font-size:24px;color:var(--muted);cursor:pointer}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:12px 18px;border-radius:10px;font-weight:700;font-size:14px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:100}
+.toast.on{opacity:1}
+</style>
 </head>
 <body>
-<div class="bank">
-  <div class="top tint-primary">
-    <div class="topbar">
-      <a class="back" href="/">←</a>
-      <div class="title"><div class="b-logo"><img id="blogo" alt=""/></div><span id="bname"></span></div>
-      <div class="avatar">👤</div>
+<div class="app">
+  <div class="head">
+    <div class="headtop">
+      <a href="/" style="color:#fff;text-decoration:none;font-size:22px">←</a>
+      <div class="logo"><span class="dot"></span>wafacash</div>
+      <div class="htools"><span>🔔</span><span>👤</span></div>
     </div>
-    <div class="balance">
-      <div class="l">Solde disponible</div>
-      <div class="v"><span id="bal">•••••• F</span><button id="eye" class="eye">👁</button></div>
-      <div class="slogan" id="bslogan"></div>
+    <div class="hero">
+      <h1>Envoyez, recevez, payez<br/>partout dans le monde 🌍</h1>
+      <p>Bonjour, bienvenue sur votre espace Wafacash</p>
+    </div>
+    <div class="bal-card">
+      <div class="lb">Solde disponible</div>
+      <div class="v" id="bal">125 000<span class="u">MAD</span></div>
+      <span class="eye" id="eye">👁</span>
     </div>
   </div>
+
   <div class="body">
-    <div class="actions">
-      <button data-action="send"><span class="ic tint-accent">↗</span><span class="lb">Envoyer</span></button>
-      <button data-action="recv"><span class="ic tint-accent">↙</span><span class="lb">Recevoir</span></button>
-      <button data-action="bill"><span class="ic tint-accent">🧾</span><span class="lb">Factures</span></button>
-      <button data-action="withdraw"><span class="ic tint-accent">🏧</span><span class="lb">Retrait</span></button>
+    <h3 class="svc-h">Nos services</h3>
+    <div class="services">
+      <div class="svc" data-a="envoi"><div class="i">📤</div><div class="t">Envoi<br/>d'argent</div></div>
+      <div class="svc" data-a="reception"><div class="i">📥</div><div class="t">Réception</div></div>
+      <div class="svc" data-a="factures"><div class="i">🧾</div><div class="t">Payer facture</div></div>
+      <div class="svc" data-a="recharge"><div class="i">📱</div><div class="t">Recharge</div></div>
+      <div class="svc" data-a="international"><div class="i">🌍</div><div class="t">International</div></div>
+      <div class="svc" data-a="change"><div class="i">💱</div><div class="t">Change</div></div>
+      <div class="svc" data-a="agences"><div class="i">📍</div><div class="t">Agences</div></div>
+      <div class="svc" data-a="assurance"><div class="i">🛡️</div><div class="t">Assurance</div></div>
     </div>
-    <div class="subcards">
-      <div class="sc"><div class="t">Compte courant</div><div class="n">**** 3421</div><div class="s" id="bal2"></div></div>
-      <div class="sc"><div class="t">Épargne</div><div class="n">**** 8890</div><div class="s">0 F</div></div>
-    </div>
-    <div class="txs">
-      <div class="txs-head"><h3>Transactions</h3><span>Historique</span></div>
-      <div class="txs-list" id="txs"></div>
-    </div>
-    <div class="credit"><span id="bname2"></span> — Powered by PayZone Afrique</div>
   </div>
+
+  <div class="promo">
+    <div class="em">🎉</div>
+    <div class="tx">Envoyez vers l'international <span>sans frais</span> jusqu'au 31/12 !</div>
+  </div>
+
+  <div class="tx-h"><h3>Historique</h3><a href="#">Voir tout</a></div>
+  <div class="txs" id="txs"></div>
 </div>
-<div id="modal" class="modal hidden">
+
+<div class="tabbar">
+  <button class="tb on"><span class="i">🏠</span>Accueil</button>
+  <button class="tb"><span class="i">📤</span>Envoyer</button>
+  <button class="tb"><span class="i">📊</span>Historique</button>
+  <button class="tb"><span class="i">☰</span>Menu</button>
+</div>
+
+<div class="modal" id="modal">
   <div class="sheet">
-    <div class="sheet-h"><h3 id="mtitle"></h3><button id="mclose" class="x">×</button></div>
-    <div class="field" id="lb-field"><label id="lb-label"></label><input id="lb" placeholder="Nom / N° compte"/></div>
-    <label>Montant (FCFA)</label>
-    <input id="amt" class="amt" type="number" placeholder="0"/>
-    <button id="msubmit" class="submit tint-primary">Valider</button>
+    <button class="close" id="mclose">×</button>
+    <h3 id="mtitle">Envoi d'argent</h3>
+    <label id="lb1">Destinataire</label>
+    <input id="lb" placeholder="Nom du destinataire"/>
+    <label id="lb2">Pays</label>
+    <select id="ctry">
+      <option>🇲🇦 Maroc</option><option>🇫🇷 France</option><option>🇸🇳 Sénégal</option>
+      <option>🇨🇮 Côte d'Ivoire</option><option>🇧🇪 Belgique</option><option>🇪🇸 Espagne</option>
+    </select>
+    <label>Montant (MAD)</label>
+    <input id="amt" type="number" placeholder="0"/>
+    <button class="btn" id="submit">Confirmer l'envoi</button>
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-window.BANK_CONFIG = {
-  key: "wafacash", name: "Wafacash", slogan: "Transfert d'argent rapide",
-  primary: "#00A651", primaryDark: "#00612f", onPrimary: "#fff",
-  accent: "#d1fae5", logo: "wafacash.png"
+var STORE='pz_wafacash_v2';
+var DEF={bal:125000,txs:[
+  {t:'Envoi vers France - Ahmed',d:'20 juil.',a:2500,dir:'out'},
+  {t:'Réception Western Union',d:'18 juil.',a:5000,dir:'in'},
+  {t:'Recharge Maroc Telecom',d:'15 juil.',a:100,dir:'out'},
+  {t:'Paiement Lydec',d:'10 juil.',a:340,dir:'out'}
+]};
+var st;try{st=JSON.parse(localStorage.getItem(STORE))||DEF}catch(e){st=DEF}
+var vis=true;
+function fmt(n){return n.toLocaleString('fr-FR').replace(/,/g,' ')}
+function render(){
+  document.getElementById('bal').innerHTML=(vis?fmt(st.bal):'••••••')+'<span class="u">MAD</span>';
+  var el=document.getElementById('txs');el.innerHTML='';
+  st.txs.slice(0,8).forEach(function(x){
+    var d=document.createElement('div');d.className='tx';
+    d.innerHTML='<div class="ic '+x.dir+'">'+(x.dir==='in'?'↙':'↗')+'</div><div class="mid"><div class="t"></div><div class="d"></div></div><div class="a '+x.dir+'"></div>';
+    d.querySelector('.t').textContent=x.t;d.querySelector('.d').textContent=x.d;
+    d.querySelector('.a').textContent=(x.dir==='in'?'+ ':'- ')+fmt(x.a)+' MAD';
+    el.appendChild(d);
+  });
+}
+function save(){try{localStorage.setItem(STORE,JSON.stringify(st))}catch(e){}}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on')},2200)}
+document.getElementById('eye').onclick=function(){vis=!vis;render()};
+var cur=null;
+var titles={envoi:"Envoi d'argent",reception:'Réception',factures:'Payer une facture',recharge:'Recharge mobile',international:'Transfert international',change:'Change de devises',agences:'Trouver une agence',assurance:'Souscrire assurance'};
+var labels={envoi:'Destinataire',reception:'Émetteur',factures:'Facturier',recharge:'Numéro',international:'Destinataire',change:'Devise cible',agences:'Ville',assurance:'Type'};
+document.querySelectorAll('.svc').forEach(function(s){s.onclick=function(){
+  cur=s.getAttribute('data-a');
+  document.getElementById('mtitle').textContent=titles[cur];
+  document.getElementById('lb1').textContent=labels[cur];
+  document.getElementById('lb').value='';document.getElementById('amt').value='';
+  var showCtry=(cur==='envoi'||cur==='international');
+  document.getElementById('ctry').style.display=showCtry?'block':'none';
+  document.getElementById('lb2').style.display=showCtry?'block':'none';
+  document.getElementById('modal').classList.add('on');
+}});
+document.getElementById('mclose').onclick=function(){document.getElementById('modal').classList.remove('on')};
+document.getElementById('submit').onclick=function(){
+  var a=parseFloat(document.getElementById('amt').value||0);if(!a||a<=0){toast('Montant invalide');return}
+  var isOut=cur!=='reception';
+  if(isOut&&a>st.bal){toast('Solde insuffisant');return}
+  var lbl=(document.getElementById('lb').value||titles[cur]);
+  st.bal+=isOut?-a:a;
+  st.txs.unshift({t:lbl,d:new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}),a:a,dir:isOut?'out':'in'});
+  st.txs=st.txs.slice(0,20);save();render();
+  document.getElementById('modal').classList.remove('on');
+  toast('Opération réussie');
 };
+render();
 </script>
-<script src="bank.js"></script>
 </body>
 </html>

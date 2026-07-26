@@ -2,60 +2,213 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Attijari Bank — PayZone Afrique</title>
-<meta name="description" content="Espace client Attijari Bank : solde, transferts, factures et retraits."/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Attijari Mobile</title>
+<meta name="description" content="Attijari Mobile — Tableau de bord, virements, paiements et recharges."/>
 <link rel="icon" href="favicon.ico"/>
-<link rel="stylesheet" href="style.css"/>
+<style>
+:root{--orange:#F26A3F;--orange-2:#E85A2C;--navy:#0F2A44;--muted:#7B8A9A;--bg:#F7F8FA;--card:#fff;--line:#EEF1F4}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:#000}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--navy)}
+.app{max-width:440px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;overflow:hidden;padding-bottom:96px}
+.status{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 4px;font-size:14px;font-weight:600}
+.status .r{display:flex;gap:6px;align-items:center;font-size:12px}
+.header{padding:8px 22px 0;display:flex;justify-content:space-between;align-items:flex-start}
+.hi{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.bell{width:38px;height:38px;border-radius:50%;background:#FFF1EC;display:flex;align-items:center;justify-content:center;color:var(--orange);font-size:18px;position:relative}
+.bell::after{content:"";position:absolute;top:8px;right:10px;width:8px;height:8px;background:var(--orange);border-radius:50%;border:2px solid #FFF1EC}
+.mes{display:flex;align-items:center;gap:8px;padding:14px 22px 0;color:var(--muted);font-size:14px}
+.mes .eye{cursor:pointer;color:var(--orange)}
+.amount{padding:2px 22px 14px;font-size:34px;font-weight:800;letter-spacing:-1px}
+.amount .cents{font-size:16px;font-weight:700;vertical-align:top;margin-left:2px;color:#2b3e55}
+.amount .cur{font-size:14px;color:var(--muted);margin-left:4px;font-weight:600}
+.cards-scroll{padding:0 0 6px 22px;overflow-x:auto;display:flex;gap:14px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.cards-scroll::-webkit-scrollbar{display:none}
+.acct{min-width:280px;height:170px;border-radius:22px;padding:18px 20px;color:#fff;position:relative;scroll-snap-align:start;box-shadow:0 12px 30px -12px rgba(232,90,44,.55);overflow:hidden}
+.acct.primary{background:linear-gradient(135deg,#F26A3F 0%,#E85A2C 100%)}
+.acct.secondary{background:#EAF2FA;color:var(--navy);box-shadow:0 8px 24px -14px rgba(15,42,68,.25)}
+.acct .rings{position:absolute;right:-30px;top:20px;width:180px;height:130px;opacity:.35}
+.acct .name{font-size:18px;font-weight:700}
+.acct .more{position:absolute;right:16px;top:16px;color:#fff;opacity:.9;letter-spacing:2px;font-weight:800}
+.acct.secondary .more{color:var(--navy)}
+.acct .sub{margin-top:6px;font-size:13px;opacity:.9}
+.acct .num{font-size:13px;opacity:.85;letter-spacing:1px;margin-top:4px}
+.acct .bal{position:absolute;bottom:16px;left:20px;font-size:24px;font-weight:800;letter-spacing:-.5px}
+.acct .bal .c{font-size:13px;vertical-align:top;font-weight:700}
+.acct .bal .u{font-size:12px;margin-left:4px;font-weight:600;opacity:.9}
+.dots{display:flex;gap:6px;justify-content:center;margin:12px 0 4px}
+.dots span{width:6px;height:6px;border-radius:50%;background:#D9DEE4}
+.dots span.on{background:var(--orange);width:18px;border-radius:4px}
+.section-h{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 10px}
+.section-h h3{margin:0;font-size:17px;font-weight:800}
+.section-h a{color:var(--orange);font-size:14px;font-weight:700;text-decoration:none}
+.shortcuts{background:var(--card);border-radius:20px;margin:0 16px;padding:16px;box-shadow:0 4px 16px -8px rgba(15,42,68,.08)}
+.shortcuts-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.shortcuts-h h4{margin:0;font-size:16px;font-weight:800}
+.shortcuts-h .edit{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--orange);cursor:pointer;background:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:transform .12s}
+.tile:active{transform:scale(.97)}
+.tile .t{font-size:14px;font-weight:700;line-height:1.2}
+.tile .i{width:38px;height:38px;border-radius:10px;background:#FFF1EC;display:flex;align-items:center;justify-content:center;color:var(--orange);font-size:18px}
+.ops{background:var(--card);margin:14px 16px 20px;border-radius:20px;padding:16px;box-shadow:0 4px 16px -8px rgba(15,42,68,.08)}
+.ops-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.ops-h h4{margin:0;font-size:16px;font-weight:800}
+.ops-h a{color:var(--orange);font-size:13px;font-weight:700;text-decoration:none}
+.month{color:var(--muted);font-size:13px;margin:6px 0 10px}
+.op{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.op:first-of-type{border-top:0}
+.op .ic{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.op .ic.in{background:#E7F7EE;color:#1DAE60}
+.op .ic.out{background:#FFE5DE;color:var(--orange)}
+.op .mid{flex:1;min-width:0}
+.op .mid .lb{font-size:14px;font-weight:700}
+.op .mid .dt{font-size:12px;color:var(--muted);margin-top:2px}
+.op .amt{font-size:14px;font-weight:800;white-space:nowrap}
+.op .amt.in{color:#1DAE60}
+.op .amt.out{color:var(--navy)}
+.tabbar{position:fixed;bottom:0;left:0;right:0;max-width:440px;margin:0 auto;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding:10px 8px 18px;box-shadow:0 -8px 24px -12px rgba(15,42,68,.15);z-index:10}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--muted);cursor:pointer;font-weight:600;background:none;border:0;padding:6px}
+.tab.on{color:var(--orange)}
+.tab .ti{font-size:20px}
+.fab{width:56px;height:56px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:-32px;box-shadow:0 8px 20px -6px rgba(15,42,68,.5);cursor:pointer}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(15,42,68,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal.on{opacity:1;pointer-events:auto}
+.sheet{width:100%;max-width:440px;background:#fff;border-radius:22px 22px 0 0;padding:20px;transform:translateY(20px);transition:transform .25s}
+.modal.on .sheet{transform:translateY(0)}
+.sheet h3{margin:0 0 14px;font-size:18px;font-weight:800}
+.sheet label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px;font-weight:600}
+.sheet input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:12px;font-size:16px;font-family:inherit;outline:none}
+.sheet input:focus{border-color:var(--orange)}
+.sheet .btn{width:100%;background:var(--orange);color:#fff;border:0;padding:16px;border-radius:12px;font-size:16px;font-weight:700;margin-top:16px;cursor:pointer}
+.sheet .close{position:absolute;right:20px;top:16px;background:none;border:0;font-size:24px;color:var(--muted);cursor:pointer}
+.sheet-wrap{position:relative}
+</style>
 </head>
 <body>
-<div class="bank">
-  <div class="top tint-primary">
-    <div class="topbar">
-      <a class="back" href="/">←</a>
-      <div class="title"><div class="b-logo"><img id="blogo" alt=""/></div><span id="bname"></span></div>
-      <div class="avatar">👤</div>
+<div class="app">
+  <div class="status">
+    <span>9:41</span>
+    <div class="r"><span>●●●</span><span>📶</span><span>🔋</span></div>
+  </div>
+  <div class="header">
+    <div>
+      <div class="hi">Bienvenue <span style="color:var(--orange)">Najib</span></div>
     </div>
-    <div class="balance">
-      <div class="l">Solde disponible</div>
-      <div class="v"><span id="bal">•••••• F</span><button id="eye" class="eye">👁</button></div>
-      <div class="slogan" id="bslogan"></div>
+    <div class="bell">🔔</div>
+  </div>
+  <div class="mes">Mes comptes <span class="eye" id="eye">👁</span></div>
+  <div class="amount" id="totalAmt">146.460<span class="cents">,00</span><span class="cur">DH</span></div>
+
+  <div class="cards-scroll" id="cards">
+    <div class="acct primary">
+      <div class="more">⋮</div>
+      <svg class="rings" viewBox="0 0 200 140"><g fill="none" stroke="#fff" stroke-width="2" opacity=".6"><circle cx="120" cy="70" r="42"/><circle cx="140" cy="70" r="42"/><circle cx="160" cy="70" r="42"/></g></svg>
+      <div class="name">Compte Principal</div>
+      <div class="sub">Compte chèque</div>
+      <div class="num">•••• •••• 3564</div>
+      <div class="bal" id="bal1">36.461<span class="c">,20</span><span class="u">DH</span></div>
+    </div>
+    <div class="acct secondary">
+      <div class="more">⋮</div>
+      <div class="name">Compte Épargne</div>
+      <div class="sub">Compte d'épargne</div>
+      <div class="num">•••• •••• 8890</div>
+      <div class="bal">109.999<span class="c">,80</span><span class="u">DH</span></div>
     </div>
   </div>
-  <div class="body">
-    <div class="actions">
-      <button data-action="send"><span class="ic tint-accent">↗</span><span class="lb">Envoyer</span></button>
-      <button data-action="recv"><span class="ic tint-accent">↙</span><span class="lb">Recevoir</span></button>
-      <button data-action="bill"><span class="ic tint-accent">🧾</span><span class="lb">Factures</span></button>
-      <button data-action="withdraw"><span class="ic tint-accent">🏧</span><span class="lb">Retrait</span></button>
+  <div class="dots"><span class="on"></span><span></span></div>
+
+  <div class="shortcuts">
+    <div class="shortcuts-h">
+      <h4>Que voulez-vous faire ?</h4>
+      <div class="edit">✎</div>
     </div>
-    <div class="subcards">
-      <div class="sc"><div class="t">Compte courant</div><div class="n">**** 3421</div><div class="s" id="bal2"></div></div>
-      <div class="sc"><div class="t">Épargne</div><div class="n">**** 8890</div><div class="s">0 F</div></div>
+    <div class="grid">
+      <div class="tile" data-a="virement"><div class="t">Virement</div><div class="i">⇄</div></div>
+      <div class="tile" data-a="paiement"><div class="t">Paiement et Recharge</div><div class="i">🧾</div></div>
+      <div class="tile" data-a="cash"><div class="t">Cash express</div><div class="i">🤲</div></div>
+      <div class="tile" data-a="docs"><div class="t">Consultation de mes documents</div><div class="i">📄</div></div>
     </div>
-    <div class="txs">
-      <div class="txs-head"><h3>Transactions</h3><span>Historique</span></div>
-      <div class="txs-list" id="txs"></div>
-    </div>
-    <div class="credit"><span id="bname2"></span> — Powered by PayZone Afrique</div>
+  </div>
+
+  <div class="ops">
+    <div class="ops-h"><h4>Dérnières Opérations</h4><a href="#">Voir plus</a></div>
+    <div class="month">Juin 2025</div>
+    <div id="ops"></div>
   </div>
 </div>
-<div id="modal" class="modal hidden">
-  <div class="sheet">
-    <div class="sheet-h"><h3 id="mtitle"></h3><button id="mclose" class="x">×</button></div>
-    <div class="field" id="lb-field"><label id="lb-label"></label><input id="lb" placeholder="Nom / N° compte"/></div>
-    <label>Montant (FCFA)</label>
-    <input id="amt" class="amt" type="number" placeholder="0"/>
-    <button id="msubmit" class="submit tint-primary">Valider</button>
-  </div>
+
+<div class="tabbar">
+  <button class="tab on"><span class="ti">🏠</span>Home</button>
+  <button class="tab"><span class="ti">👛</span>Comptes</button>
+  <div class="fab">📱</div>
+  <button class="tab"><span class="ti">💳</span>Cartes</button>
+  <button class="tab"><span class="ti">☰</span>Menu</button>
 </div>
+
+<div class="modal" id="modal">
+  <div class="sheet"><div class="sheet-wrap">
+    <button class="close" id="mclose">×</button>
+    <h3 id="mtitle">Virement</h3>
+    <label id="lb1">Bénéficiaire</label>
+    <input id="lb" placeholder="Nom ou RIB"/>
+    <label>Montant (DH)</label>
+    <input id="amt" type="number" placeholder="0"/>
+    <button class="btn" id="submit">Valider</button>
+  </div></div>
+</div>
+
 <script>
-window.BANK_CONFIG = {
-  key: "attijari", name: "Attijari Bank", slogan: "Banque nouvelle génération",
-  primary: "#E30613", primaryDark: "#8a0009", onPrimary: "#fff",
-  accent: "#ffe4e6", logo: "attijari.png"
+var STORE='pz_attijari_v2';
+var DEF={total:146460, main:36461.20, txs:[
+  {t:'Virement reçu de Lorem',d:'15 juin',a:460,dir:'in'},
+  {t:'Internet Orange',d:'11 juin',a:300,dir:'out'},
+  {t:'Amazon Marketplace',d:'08 juin',a:440,dir:'out'}
+]};
+var st; try{st=JSON.parse(localStorage.getItem(STORE))||DEF}catch(e){st=DEF}
+var vis=true;
+
+function fmtDH(n){var i=Math.floor(n),c=Math.round((n-i)*100);var s=i.toLocaleString('fr-FR').replace(/\s/g,'.');return {i:s,c:('0'+c).slice(-2)}}
+function render(){
+  var t=fmtDH(st.total);
+  document.getElementById('totalAmt').innerHTML = vis? (t.i+'<span class="cents">,'+t.c+'</span><span class="cur">DH</span>') : '•••••<span class="cur">DH</span>';
+  var b=fmtDH(st.main);
+  document.getElementById('bal1').innerHTML = b.i+'<span class="c">,'+b.c+'</span><span class="u">DH</span>';
+  var o=document.getElementById('ops'); o.innerHTML='';
+  st.txs.slice(0,6).forEach(function(x){
+    var d=document.createElement('div');d.className='op';
+    d.innerHTML='<div class="ic '+x.dir+'">'+(x.dir==='in'?'↙':'↗')+'</div><div class="mid"><div class="lb"></div><div class="dt"></div></div><div class="amt '+x.dir+'"></div>';
+    d.querySelector('.lb').textContent=x.t;d.querySelector('.dt').textContent=x.d;
+    d.querySelector('.amt').textContent=(x.dir==='in'?'+ ':'- ')+x.a.toLocaleString('fr-FR')+',00 DH';
+    o.appendChild(d);
+  });
+}
+document.getElementById('eye').onclick=function(){vis=!vis;render()};
+var cur=null;
+var titles={virement:'Virement',paiement:'Paiement et Recharge',cash:'Cash express',docs:'Consultation de mes documents'};
+var labels={virement:'Bénéficiaire',paiement:'Facturier',cash:'Numéro',docs:'Référence document'};
+document.querySelectorAll('.tile').forEach(function(t){t.onclick=function(){
+  cur=t.getAttribute('data-a');
+  document.getElementById('mtitle').textContent=titles[cur];
+  document.getElementById('lb1').textContent=labels[cur];
+  document.getElementById('lb').value='';document.getElementById('amt').value='';
+  document.getElementById('modal').classList.add('on');
+}});
+document.getElementById('mclose').onclick=function(){document.getElementById('modal').classList.remove('on')};
+document.getElementById('submit').onclick=function(){
+  var a=parseFloat(document.getElementById('amt').value||0);if(!a||a<=0)return;
+  var lbl=document.getElementById('lb').value||titles[cur];
+  var isIn=cur==='docs'?false:false;
+  st.main-=a;st.total-=a;
+  st.txs.unshift({t:lbl,d:new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}),a:a,dir:'out'});
+  st.txs=st.txs.slice(0,20);
+  try{localStorage.setItem(STORE,JSON.stringify(st))}catch(e){}
+  document.getElementById('modal').classList.remove('on');render();
 };
+render();
 </script>
-<script src="bank.js"></script>
 </body>
 </html>

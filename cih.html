@@ -2,60 +2,179 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>CIH Bank — PayZone Afrique</title>
-<meta name="description" content="Espace client CIH Bank : comptes, virements et paiements."/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>CIH Bank</title>
+<meta name="description" content="CIH Bank — Espace client : comptes, cartes, virements et paiements."/>
 <link rel="icon" href="favicon.ico"/>
-<link rel="stylesheet" href="style.css"/>
+<style>
+:root{--orange:#EF7822;--orange-2:#E96A12;--blue:#1CA0E5;--navy:#2B3A55;--muted:#7A8697;--green:#2FB865;--red:#E14B5A;--line:#F0E7DE;--bg:#fff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:#111}
+body{font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;color:var(--navy)}
+.app{max-width:440px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:80px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:2px solid var(--orange)}
+.topbar .l,.topbar .r{display:flex;gap:14px;align-items:center;color:var(--blue);font-size:20px}
+.topbar .brand{font-weight:800;font-size:22px;color:var(--navy);letter-spacing:-.5px;display:flex;align-items:center;gap:2px}
+.topbar .brand .arrow{color:var(--orange);font-size:20px;margin:0 2px}
+.topbar .r .power{color:var(--muted)}
+.profile{display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid var(--line)}
+.profile .av{width:66px;height:66px;border-radius:50%;background:#D8D2C4 url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2238%22 r=%2218%22 fill=%22%23604A38%22/><path d=%22M20 100 C20 70 80 70 80 100 Z%22 fill=%22%23604A38%22/><path d=%22M30 30 Q50 10 70 30 L70 45 Q50 40 30 45 Z%22 fill=%22%23F5F5F5%22/></svg>') center/cover;flex-shrink:0}
+.profile .info{flex:1;min-width:0}
+.profile .name{font-weight:800;font-size:15px}
+.profile .em,.profile .ph{font-size:13px;color:var(--navy);margin-top:3px;display:flex;align-items:center;gap:6px}
+.profile .em::before{content:"✉";color:var(--muted)}
+.profile .ph::before{content:"📱";color:var(--muted)}
+.section{border-bottom:1px solid var(--line);padding:14px 16px}
+.section h3{margin:0 0 10px;color:var(--orange);font-size:15px;font-weight:800}
+.acct-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.acct-row .lb{font-weight:700;font-size:14px}
+.acct-row .no{font-size:13px;color:var(--blue);letter-spacing:1px;margin-top:2px}
+.acct-row .bal{color:var(--green);font-weight:800;font-size:15px;white-space:nowrap}
+.card-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;gap:10px}
+.card-row .no{color:var(--blue);letter-spacing:1px;font-size:13px;margin-top:2px}
+.card-img{width:80px;height:52px;border-radius:8px;background:linear-gradient(135deg,#8B1A1A 0%,#C42020 60%,#E85050 100%);position:relative;box-shadow:0 4px 10px -4px rgba(0,0,0,.3);flex-shrink:0}
+.card-img::before{content:"";position:absolute;left:8px;top:10px;width:14px;height:10px;background:#F2C744;border-radius:2px}
+.card-img::after{content:"CIH";position:absolute;left:6px;bottom:4px;color:#fff;font-size:9px;font-weight:800}
+.actions{display:grid;grid-template-columns:1fr 1fr;padding:8px 8px}
+.action{padding:22px 12px;border:1px solid var(--line);margin:6px;border-radius:6px;text-align:center;cursor:pointer;background:#fff;transition:all .15s}
+.action:active{transform:scale(.97);background:#FFF7F0}
+.action .ic{font-size:32px;color:var(--orange);margin-bottom:8px}
+.action .t{font-size:13px;font-weight:600;color:var(--navy);line-height:1.3}
+.footer2{display:flex;padding:14px 16px;gap:14px;border-top:1px solid var(--line);align-items:center}
+.foot-item{flex:1;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;line-height:1.2}
+.foot-item .fi{font-size:22px;flex-shrink:0}
+.foot-item .txt span{color:var(--orange)}
+.dark{background:#2B3A55;color:#fff;padding:12px 16px;font-size:11px;text-align:center;position:fixed;bottom:0;left:0;right:0;max-width:440px;margin:0 auto}
+
+/* Virement screen */
+.hidden{display:none!important}
+.tabs{display:flex}
+.tab{flex:1;padding:14px;text-align:center;font-weight:800;font-size:14px;cursor:pointer;background:#fff;color:var(--orange);border-bottom:2px solid var(--line)}
+.tab.on{background:var(--orange);color:#fff;border-bottom-color:var(--orange)}
+.vsec{padding:10px 0;border-bottom:1px solid var(--line)}
+.vsec .lb{color:var(--orange);font-weight:800;font-size:14px;padding:8px 16px 4px}
+.vsec .vname{padding:2px 16px;font-weight:700;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+.vsec .vname .g{color:var(--green);font-weight:800}
+.vsec .msk{color:var(--blue);font-size:13px;padding:0 16px 6px;letter-spacing:1px}
+.chev{text-align:center;color:var(--blue);padding:4px 0;font-size:14px}
+.benef{background:var(--blue);color:#fff;text-align:center;padding:14px;font-weight:700;cursor:pointer}
+.frow{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.frow label{width:90px;font-weight:700;font-size:14px}
+.frow input{flex:1;border:1px solid #D0D5DD;border-radius:4px;padding:8px;font-size:14px;font-family:inherit;outline:none}
+.frow input:focus{border-color:var(--orange)}
+.suivant{margin:12px 16px;padding:14px;background:#EDEDED;color:var(--orange);text-align:center;font-weight:800;font-size:15px;border-radius:2px;cursor:pointer;border:0;width:calc(100% - 32px)}
+.suivant.active{background:var(--orange);color:#fff}
+.plaf{padding:8px 16px;font-size:13px;font-weight:700}
+.plaf span{color:var(--green)}
+.addb{position:fixed;bottom:44px;left:0;right:0;max-width:440px;margin:0 auto;background:var(--orange);color:#fff;padding:16px;text-align:center;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.addb::before{content:"👤+";font-size:18px}
+
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:12px 18px;border-radius:8px;font-weight:700;font-size:14px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:100}
+.toast.on{opacity:1}
+</style>
 </head>
 <body>
-<div class="bank">
-  <div class="top tint-primary">
-    <div class="topbar">
-      <a class="back" href="/">←</a>
-      <div class="title"><div class="b-logo"><img id="blogo" alt=""/></div><span id="bname"></span></div>
-      <div class="avatar">👤</div>
-    </div>
-    <div class="balance">
-      <div class="l">Solde disponible</div>
-      <div class="v"><span id="bal">•••••• F</span><button id="eye" class="eye">👁</button></div>
-      <div class="slogan" id="bslogan"></div>
+<div class="app" id="home">
+  <div class="topbar">
+    <div class="l"><span>☰</span><span>✉</span><span>🔔</span></div>
+    <div class="brand">CIH<span class="arrow">▶</span>BANK</div>
+    <div class="r"><span>⚙</span><span class="power">⏻</span></div>
+  </div>
+
+  <div class="profile">
+    <div class="av"></div>
+    <div class="info">
+      <div class="name">TEST TEST</div>
+      <div class="em">TESTTEST@MAIL.COM</div>
+      <div class="ph">212676***624</div>
     </div>
   </div>
-  <div class="body">
-    <div class="actions">
-      <button data-action="send"><span class="ic tint-accent">↗</span><span class="lb">Envoyer</span></button>
-      <button data-action="recv"><span class="ic tint-accent">↙</span><span class="lb">Recevoir</span></button>
-      <button data-action="bill"><span class="ic tint-accent">🧾</span><span class="lb">Factures</span></button>
-      <button data-action="withdraw"><span class="ic tint-accent">🏧</span><span class="lb">Retrait</span></button>
+
+  <div class="section">
+    <h3>Mes Comptes</h3>
+    <div class="acct-row">
+      <div><div class="lb">MONSIEUR TEST TEST</div><div class="no">******4211******</div></div>
+      <div class="bal" id="balDisplay">6 776,57 MAD</div>
     </div>
-    <div class="subcards">
-      <div class="sc"><div class="t">Compte courant</div><div class="n">**** 3421</div><div class="s" id="bal2"></div></div>
-      <div class="sc"><div class="t">Épargne</div><div class="n">**** 8890</div><div class="s">0 F</div></div>
+  </div>
+
+  <div class="section">
+    <h3>Mes Cartes</h3>
+    <div class="card-row">
+      <div><div class="lb">C-JEUNE EMV MULT</div><div class="no">5432345******876</div></div>
+      <div class="card-img"></div>
     </div>
-    <div class="txs">
-      <div class="txs-head"><h3>Transactions</h3><span>Historique</span></div>
-      <div class="txs-list" id="txs"></div>
-    </div>
-    <div class="credit"><span id="bname2"></span> — Powered by PayZone Afrique</div>
+  </div>
+
+  <div class="actions">
+    <div class="action" onclick="goVir()"><div class="ic">⇄</div><div class="t">Effectuez un virement</div></div>
+    <div class="action" onclick="act('Payez vos factures')"><div class="ic">📋</div><div class="t">Payez vos factures</div></div>
+    <div class="action" onclick="act('Effectuez une recharge')"><div class="ic">📱</div><div class="t">Effectuez une recharge</div></div>
+    <div class="action" onclick="act('Transférez de l\'argent')"><div class="ic">💸</div><div class="t">Transférez de l'argent</div></div>
+  </div>
+
+  <div class="footer2">
+    <div class="foot-item"><span class="fi">💬</span><span class="txt">VOTRE <span>AVIS</span><br>NOUS INTERESSE</span></div>
+    <div class="foot-item"><span class="fi">🎧</span><span class="txt">CONTACTER MON<br><span>CONSEILLER</span></span></div>
   </div>
 </div>
-<div id="modal" class="modal hidden">
-  <div class="sheet">
-    <div class="sheet-h"><h3 id="mtitle"></h3><button id="mclose" class="x">×</button></div>
-    <div class="field" id="lb-field"><label id="lb-label"></label><input id="lb" placeholder="Nom / N° compte"/></div>
-    <label>Montant (FCFA)</label>
-    <input id="amt" class="amt" type="number" placeholder="0"/>
-    <button id="msubmit" class="submit tint-primary">Valider</button>
+
+<div class="app hidden" id="vir">
+  <div class="topbar">
+    <div class="l"><span>☰</span><span>✉</span><span>🔔</span></div>
+    <div class="brand">CIH<span class="arrow">▶</span>BANK</div>
+    <div class="r"><span style="color:var(--blue);cursor:pointer" onclick="goHome()">◄</span><span onclick="goHome()" style="cursor:pointer">🏠</span><span class="power">⏻</span></div>
   </div>
+  <div class="tabs">
+    <div class="tab on">VIREMENT</div>
+    <div class="tab">HISTORIQUE</div>
+  </div>
+  <div class="vsec">
+    <div class="lb">Compte à débiter</div>
+    <div class="vname"><span>MONSIEUR TEST TEST</span><span class="g" id="balVir">6 776,57 MAD</span></div>
+    <div class="msk">******4211******</div>
+    <div class="chev">▼</div>
+  </div>
+  <div class="benef" onclick="pickBenef()">Choisissez votre bénéficiaire</div>
+  <div class="frow"><label>Montant :</label><input id="vAmt" type="number" placeholder=""/></div>
+  <div class="frow"><label>Motif :</label><input id="vMot" placeholder=""/></div>
+  <button class="suivant" id="vSubmit" onclick="doVir()">SUIVANT</button>
+  <div class="plaf">Plafond quotidien: <span>100 000,00</span></div>
+  <div class="plaf">Plafond par opération: <span>100 000,00</span></div>
+  <div class="addb" onclick="pickBenef()">Ajouter un Bénéficiaire</div>
 </div>
+
+<div class="dark">© CIH Bank — Powered by PayZone Afrique</div>
+<div class="toast" id="toast"></div>
+
 <script>
-window.BANK_CONFIG = {
-  key: "cih", name: "CIH Bank", slogan: "La banque qui vous ressemble",
-  primary: "#008C44", primaryDark: "#004d24", onPrimary: "#fff",
-  accent: "#d1fae5", logo: "cih.png"
-};
+var STORE='pz_cih_v2';
+var DEF={bal:6776.57,benef:''};
+var st;try{st=JSON.parse(localStorage.getItem(STORE))||DEF}catch(e){st=DEF}
+function fmt(n){return n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).replace(',','X').replace('.',',').replace('X',',').replace(/,(\d{2})$/,',$1')}
+function fmt2(n){var s=n.toFixed(2).replace('.',',');var p=s.split(',');p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ');return p.join(',')}
+function updBal(){document.getElementById('balDisplay').textContent=fmt2(st.bal)+' MAD';document.getElementById('balVir').textContent=fmt2(st.bal)+' MAD'}
+function save(){try{localStorage.setItem(STORE,JSON.stringify(st))}catch(e){}}
+function goVir(){document.getElementById('home').classList.add('hidden');document.getElementById('vir').classList.remove('hidden');window.scrollTo(0,0)}
+function goHome(){document.getElementById('vir').classList.add('hidden');document.getElementById('home').classList.remove('hidden')}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on')},2200)}
+function act(n){toast(n+' — bientôt disponible')}
+function pickBenef(){var n=prompt('Nom du bénéficiaire :','');if(n){st.benef=n;save();document.querySelector('.benef').textContent=n+' ▾'}}
+function doVir(){
+  var a=parseFloat(document.getElementById('vAmt').value||0);
+  if(!a||a<=0){toast('Montant invalide');return}
+  if(a>st.bal){toast('Solde insuffisant');return}
+  if(!st.benef){toast('Choisissez un bénéficiaire');return}
+  st.bal-=a;save();updBal();
+  document.getElementById('vAmt').value='';document.getElementById('vMot').value='';
+  toast('Virement de '+fmt2(a)+' MAD effectué');
+}
+document.getElementById('vAmt').addEventListener('input',function(){
+  var a=parseFloat(this.value||0);
+  document.getElementById('vSubmit').classList.toggle('active',a>0);
+});
+updBal();
+if(st.benef)document.querySelector('.benef').textContent=st.benef+' ▾';
 </script>
-<script src="bank.js"></script>
 </body>
 </html>

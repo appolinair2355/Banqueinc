@@ -1,10 +1,12 @@
 services:
   - type: web
-    name: wave-app
+    name: payzone-afrique
     runtime: node
-    buildCommand: npm install
-    startCommand: node server.js
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
+      - key: NODE_VERSION
+        value: 20
       - key: PORT
         value: 3000
-    autoDeploy: true

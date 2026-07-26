@@ -48,9 +48,9 @@ let adminCreditTarget = null;
 let bannerDismissed = false;
 
 /* ── UTILS ── */
-const fmt = n => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[\u202f\s]/g, ' ') + ' F';
+const fmt = n => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[ \s]/g, '.') + 'F';
 const $ = id => document.getElementById(id);
-const balHTML = n => '<span class="bal-num">' + (n === null ? '•••••' : (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[\u202f\s]/g, ' ')) + '</span><span class="bal-cur">F</span>';
+const balHTML = n => '<span class="bal-num">' + (n === null ? '•••••' : (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[ \s]/g, '.')) + '</span><span class="bal-cur">F</span>';
 const digits = s => (s || '').replace(/\D/g, '');
 const fullName = a => (a.prenom + ' ' + a.nom).trim();
 const nowLabel = () => {
@@ -320,13 +320,9 @@ function refreshHome() {
   $('h-avatar').textContent  = (me.prenom[0] || '?').toUpperCase();
   $('h-bal').innerHTML       = balHTML(balVisible ? me.balance : null);
   $('admin-btn').style.display = me.isAdmin ? 'flex' : 'none';
-  $('link-tile').style.display = isMerchant() ? 'flex' : 'none';
-  renderQR();
   renderTxs();
-  if (bannerDismissed) $('promo-banner').style.display = 'none';
 }
 function toggleBal() { balVisible = !balVisible; refreshHome(); }
-function dismissBanner() { bannerDismissed = true; $('promo-banner').style.display = 'none'; }
 
 function qrPayload(acc) {
   return `${location.origin}${location.pathname}#pay=${acc.phone}&code=${encodeURIComponent(acc.countryCode)}&name=${encodeURIComponent(fullName(acc))}`;
@@ -342,9 +338,6 @@ function drawQR(el, payload, size) {
     colorLight: '#FFFFFF',
     correctLevel: QRCode.CorrectLevel.M,
   });
-}
-function renderQR() {
-  drawQR($('h-qr'), me.qr || qrPayload(me), 160);
 }
 
 /* ══════════ SCANNER QR (caméra réelle) ══════════ */
@@ -398,6 +391,7 @@ async function onScanSuccess(text) {
   openAmount();
   toast('QR scanné ✅');
 }
+
 function renderTxs() {
   const box = $('h-txs');
   if (!me.txs.length) {
@@ -448,7 +442,7 @@ function renderContacts(q) {
       : `<div class="empty"><div class="big" style="font-size:32px">👥</div><div style="margin-top:8px;font-weight:700">Aucun utilisateur</div><div style="font-size:13px;margin-top:4px">Invitez vos proches à rejoindre Wave</div></div>`;
     return;
   }
-  const row = a => `<div class="list-item" onclick="pickContact('${a.phone}','${a.countryCode}','${fullName(a).replace(/'/g,"\\'")}')">
+  const row = a => `<div class="list-item" onclick="pickContact('${a.phone}','${a.countryCode}','${fullName(a).replace(/'/g,"\'")}')">
     <div class="li-av">${(a.prenom[0]||'?').toUpperCase()}</div>
     <div><div class="li-name">${fullName(a)}</div><div class="li-sub">${a.countryFlag||''} ${a.countryCode} ${a.phone}</div></div>
     <span class="wave-tag">WAVE</span>
@@ -473,7 +467,7 @@ function openWithdraw()  { flow = { kind: 'withdraw',  to: { phone: '', code: ''
 
 /* ══════════ MONTANT ══════════ */
 function openAmount() {
-  const titles = { transfer:'Envoyer de l\'argent', merchant:'Payer marchand', withdraw:'Retrait espèces', link:'Paiement via lien' };
+  const titles = { transfer:'Envoyer de l'argent', merchant:'Payer marchand', withdraw:'Retrait espèces', link:'Paiement via lien' };
   $('am-title').textContent = titles[flow.kind] || 'Montant';
   $('am-contact-card').innerHTML = `
     <div class="li-av" style="width:52px;height:52px;font-size:22px">${(flow.to.name[0]||'?').toUpperCase()}</div>
@@ -611,7 +605,7 @@ function openLink() {
     <div style="background:#F0F4FF;border-radius:14px;padding:14px;margin-bottom:4px">
       <div style="font-size:11px;font-weight:800;color:var(--grey);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Mon lien de paiement</div>
       <div style="font-size:12px;word-break:break-all;color:var(--deep)">${myLink}</div>
-      <button class="btn ghost" style="margin-top:10px;font-size:13px;padding:10px" onclick="navigator.clipboard?.writeText('${myLink.replace(/'/g,"\\'")}').then(()=>toast('Lien copié 📋'))">📋 Copier mon lien</button>
+      <button class="btn ghost" style="margin-top:10px;font-size:13px;padding:10px" onclick="navigator.clipboard?.writeText('${myLink.replace(/'/g,"\'")}').then(()=>toast('Lien copié 📋'))">📋 Copier mon lien</button>
     </div>`;
   go('s-link');
 }
@@ -845,9 +839,9 @@ function renderSettings() {
 
     <div class="group-h">Légal</div>
     <div class="set-group">
-      ${row('📄','Conditions générales','Conditions d\'utilisation',"simple('Conditions générales','En utilisant Wave, vous acceptez nos conditions d\'utilisation relatives aux transferts, frais, sécurité et responsabilités.')")}
+      ${row('📄','Conditions générales','Conditions d'utilisation',"simple('Conditions générales','En utilisant Wave, vous acceptez nos conditions d'utilisation relatives aux transferts, frais, sécurité et responsabilités.')")}
       ${row('🔒','Politique de confidentialité','Vos données personnelles',"simple('Confidentialité','Vos données personnelles sont utilisées uniquement pour la fourniture des services Wave et ne sont jamais revendues.')")}
-      ${row('ℹ️','À propos','Wave · Version 1.0.0',"simple('À propos','Wave — application de transfert d\'argent mobile.\nVersion 1.0.0')")}
+      ${row('ℹ️','À propos','Wave · Version 1.0.0',"simple('À propos','Wave — application de transfert d'argent mobile.\nVersion 1.0.0')")}
     </div>
 
     <div class="set-group" style="margin-top:14px">

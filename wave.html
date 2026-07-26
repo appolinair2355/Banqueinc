@@ -176,51 +176,38 @@
         </svg>
       </span>
     </div>
-    <div class="qr-card">
-      <div class="qr-inner">
-        <div class="qr-code-box">
-          <div id="h-qr" class="qr-canvas-wrap"></div>
-          <button class="scan-btn" onclick="openScanner()">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13zm-3 3h1.5v1.5H13V16zm1.5 1.5H16V19h-1.5v-1.5zM16 16h1.5v1.5H16V16zm1.5-1.5H19V16h-1.5v-1.5zm0 3H19V19h-1.5v-1.5zM22 7h-2V4h-3V2h5v5zm0 15v-5h-2v3h-3v2h5zM2 22h5v-2H4v-3H2v5zM2 2v5h2V4h3V2H2z"/></svg>
-            Scanner
-          </button>
-        </div>
-        <div class="qr-penguin">🐧</div>
-      </div>
-    </div>
+    <button class="encaisser-btn" onclick="openScanner()">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><line x1="7" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="17" y2="7"/><line x1="7" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="17" y2="17"/></svg>
+      ENCAISSER UN CLIENT
+    </button>
   </div>
 
   <div class="home-body">
     <div class="action-grid">
       <div class="action-tile" onclick="openTransfer()">
-        <div class="tile-circle" style="background:#DBEAFE">
-          <svg viewBox="0 0 24 24" fill="#2563EB" width="28" height="28"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        <div class="tile-circle" style="background:#EDE9FE">
+          <svg viewBox="0 0 24 24" fill="#7C3AED" width="28" height="28"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
         </div>
         <span>Transfert</span>
       </div>
       <div class="action-tile" onclick="openMerchant()">
+        <div class="tile-circle" style="background:#DBEAFE">
+          <svg viewBox="0 0 24 24" fill="#2563EB" width="28" height="28"><path d="M17.21 9l-4.38-6.56c-.19-.28-.51-.42-.83-.42-.32 0-.64.14-.83.43L6.79 9H2a1 1 0 00-.96 1.27l2.76 9A1 1 0 004.76 20h14.48a1 1 0 00.96-.73l2.76-9A1 1 0 0022 9h-4.79zM12 4.8L14.8 9H9.2L12 4.8zm0 11.7a2 2 0 110-4 2 2 0 010 4z"/></svg>
+        </div>
+        <span>Payer marchand</span>
+        <span class="sans-frais-badge">Sans frais</span>
+      </div>
+      <div class="action-tile" onclick="openLink()">
         <div class="tile-circle" style="background:#FEF3C7">
-          <svg viewBox="0 0 24 24" fill="#D97706" width="28" height="28"><path d="M17.21 9l-4.38-6.56c-.19-.28-.51-.42-.83-.42-.32 0-.64.14-.83.43L6.79 9H2a1 1 0 00-.96 1.27l2.76 9A1 1 0 004.76 20h14.48a1 1 0 00.96-.73l2.76-9A1 1 0 0022 9h-4.79zM12 4.8L14.8 9H9.2L12 4.8zm0 11.7a2 2 0 110-4 2 2 0 010 4z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#D97706" width="28" height="28"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7a5 5 0 000 10h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4a5 5 0 000-10z"/></svg>
         </div>
-        <span>Paiements</span>
+        <span>Envoi de lien</span>
       </div>
-      <div class="action-tile" onclick="simple('Banque','Reliez votre compte bancaire à Wave pour des dépôts et retraits instantanés.')">
-        <div class="tile-circle" style="background:#FEE2E2">
-          <svg viewBox="0 0 24 24" fill="#DC2626" width="28" height="28"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zm8 0v7h3v-7h-3zM2 22h19v-3H2v3zm9.5-18.5L2 8v1h19V8l-9.5-4.5z"/></svg>
-        </div>
-        <span>Banque</span>
-      </div>
-      <div class="action-tile" onclick="simple('Carte Wave','Votre carte Wave virtuelle et physique. Payez partout dans le monde.')">
-        <div class="tile-circle" style="background:#EDE9FE">
-          <svg viewBox="0 0 24 24" fill="#7C3AED" width="28" height="28"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
-        </div>
-        <span>Carte</span>
-      </div>
-      <div class="action-tile" onclick="simple('Cadeaux','Envoyez de l\'argent en cadeau à vos proches avec un message personnalisé.')">
+      <div class="action-tile" onclick="openWithdraw()">
         <div class="tile-circle" style="background:#DCFCE7">
-          <svg viewBox="0 0 24 24" fill="#16A34A" width="28" height="28"><path d="M20 6h-2.18c.07-.29.18-.57.18-.88C18 3.4 16.6 2 14.88 2c-.96 0-1.77.6-2.45 1.38L12 4.01l-.43-.63C10.89 2.6 10.08 2 9.12 2 7.4 2 6 3.4 6 5.12c0 .31.11.59.18.88H4c-1.11 0-2 .89-2 2v1c0 .55.45 1 1 1h18c.55 0 1-.45 1-1V8c0-1.11-.89-2-2-2zM9.12 4c.49 0 .89.4.89.89 0 .49-.4.89-.89.89H7.21C7.5 4.83 8.25 4 9.12 4zm5.76 0c.86 0 1.61.83 1.9 1.78H14.88c-.49 0-.89-.4-.89-.89 0-.49.4-.89.89-.89zM3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-9H3v9zm8-7h2v6h-2v-6zM7 12h2v6H7v-6zm8 0h2v6h-2v-6z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#16A34A" width="28" height="28"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
         </div>
-        <span>Cadeaux</span>
+        <span>Retrait</span>
       </div>
       <div class="action-tile" onclick="renderCoffres()">
         <div class="tile-circle" style="background:#FCE7F3">
@@ -228,30 +215,6 @@
         </div>
         <span>Coffre</span>
       </div>
-      <div class="action-tile" id="link-tile" style="display:none" onclick="openLink()">
-        <div class="tile-circle" style="background:#CFFAFE">
-          <svg viewBox="0 0 24 24" fill="#0891B2" width="28" height="28"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7a5 5 0 000 10h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4a5 5 0 000-10z"/></svg>
-        </div>
-        <span>Lien paiement</span>
-      </div>
-      <div class="action-tile" onclick="renderExpenses()">
-        <div class="tile-circle" style="background:#E0E7FF">
-          <svg viewBox="0 0 24 24" fill="#4338CA" width="28" height="28"><path d="M18 17H6v-2h12v2zm0-4H6v-2h12v2zm0-4H6V7h12v2zM3 22l1.5-1.5L6 22l1.5-1.5L9 22l1.5-1.5L12 22l1.5-1.5L15 22l1.5-1.5L18 22l1.5-1.5L21 22V2l-1.5 1.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v20z"/></svg>
-        </div>
-        <span>Dépenses</span>
-      </div>
-    </div>
-
-    <div class="promo-banner" id="promo-banner">
-      <button class="promo-close" onclick="dismissBanner()">✕</button>
-      <div class="promo-body">
-        <div class="promo-text">
-          <div class="promo-title">Suivez vos dépenses</div>
-          <div class="promo-sub">Ouvrez Dépenses pour voir combien vous dépensez chaque semaine ou chaque mois</div>
-        </div>
-        <div class="promo-illo">💡🧾🛍️</div>
-      </div>
-      <button class="promo-play" onclick="renderExpenses()">▶</button>
     </div>
 
     <div id="h-txs"></div>

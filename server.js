@@ -1,17 +1,25 @@
 const express = require('express');
 const path = require('path');
-
 const app = express();
 const PORT = process.env.PORT || 10000;
+const ROOT = __dirname;
 
-// Serve static files from the same directory
-app.use(express.static(__dirname));
+// Static files at project root
+app.use(express.static(ROOT, { extensions: ['html'] }));
 
-// Fallback to index.html for SPA
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+// Explicit routes (clean URLs)
+const routes = {
+  '/':          'index.html',
+  '/attijari':  'attijari.html',
+  '/cih':       'cih.html',
+  '/wafacash':  'wafacash.html',
+  '/wave':      'wave.html',
+};
+for (const [url, file] of Object.entries(routes)) {
+  app.get(url, (_req, res) => res.sendFile(path.join(ROOT, file)));
+}
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Wave app running on port ${PORT}`);
-});
+// 404 fallback
+app.use((_req, res) => res.status(404).sendFile(path.join(ROOT, 'index.html')));
+
+app.listen(PORT, () => console.log('PayZone Afrique listening on ' + PORT));

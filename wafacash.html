@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Wafacash — PayZone Afrique</title>
+<meta name="description" content="Envoyez et recevez de l'argent partout avec Wafacash."/>
+<link rel="icon" href="favicon.ico"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="bank">
+  <div class="top tint-primary">
+    <div class="topbar">
+      <a class="back" href="/">←</a>
+      <div class="title"><div class="b-logo"><img id="blogo" alt=""/></div><span id="bname"></span></div>
+      <div class="avatar">👤</div>
+    </div>
+    <div class="balance">
+      <div class="l">Solde disponible</div>
+      <div class="v"><span id="bal">•••••• F</span><button id="eye" class="eye">👁</button></div>
+      <div class="slogan" id="bslogan"></div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="actions">
+      <button data-action="send"><span class="ic tint-accent">↗</span><span class="lb">Envoyer</span></button>
+      <button data-action="recv"><span class="ic tint-accent">↙</span><span class="lb">Recevoir</span></button>
+      <button data-action="bill"><span class="ic tint-accent">🧾</span><span class="lb">Factures</span></button>
+      <button data-action="withdraw"><span class="ic tint-accent">🏧</span><span class="lb">Retrait</span></button>
+    </div>
+    <div class="subcards">
+      <div class="sc"><div class="t">Compte courant</div><div class="n">**** 3421</div><div class="s" id="bal2"></div></div>
+      <div class="sc"><div class="t">Épargne</div><div class="n">**** 8890</div><div class="s">0 F</div></div>
+    </div>
+    <div class="txs">
+      <div class="txs-head"><h3>Transactions</h3><span>Historique</span></div>
+      <div class="txs-list" id="txs"></div>
+    </div>
+    <div class="credit"><span id="bname2"></span> — Powered by PayZone Afrique</div>
+  </div>
+</div>
+<div id="modal" class="modal hidden">
+  <div class="sheet">
+    <div class="sheet-h"><h3 id="mtitle"></h3><button id="mclose" class="x">×</button></div>
+    <div class="field" id="lb-field"><label id="lb-label"></label><input id="lb" placeholder="Nom / N° compte"/></div>
+    <label>Montant (FCFA)</label>
+    <input id="amt" class="amt" type="number" placeholder="0"/>
+    <button id="msubmit" class="submit tint-primary">Valider</button>
+  </div>
+</div>
+<script>
+window.BANK_CONFIG = {
+  key: "wafacash", name: "Wafacash", slogan: "Transfert d'argent rapide",
+  primary: "#00A651", primaryDark: "#00612f", onPrimary: "#fff",
+  accent: "#d1fae5", logo: "wafacash.png"
+};
+</script>
+<script src="bank.js"></script>
+</body>
+</html>

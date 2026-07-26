@@ -9,8 +9,6 @@
   --bg:#F2F3F5;
   --green:#17A957;
   --red:#E2352B;
-  --orange:#F97316;
-  --purple:#7C3AED;
 }
 html,body{height:100%;background:#E8ECF2;}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);}
@@ -91,7 +89,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .pv-screen .pin-dots{margin:28px 0 16px;}
 
 /* ══ HOME ══ */
-.home-top{background:linear-gradient(160deg,#4B3BE8 0%,#2B1FA0 55%,#1B2A6B 100%);padding:14px 18px 24px;position:relative;}
+.home-top{background:linear-gradient(160deg,#4B3BE8 0%,#2B1FA0 55%,#1B2A6B 100%);padding:14px 18px 88px;position:relative;}
 .top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
 .avatar{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px;cursor:pointer;flex:0 0 40px;}
 .wave-brand-sm{font-size:26px;font-weight:900;color:#fff;letter-spacing:-1px;font-style:italic;}
@@ -105,21 +103,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .bal-cur{font-size:31px;font-weight:900;letter-spacing:-.5px;margin-left:1px;-webkit-text-stroke:.7px currentColor;}
 .bal-eye{cursor:pointer;display:flex;align-items:center;opacity:.85;}
 
-/* Encaisser un client button */
-.encaisser-btn{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--blue);color:#fff;border:none;border-radius:14px;padding:16px 24px;font-size:17px;font-weight:700;cursor:pointer;width:calc(100% - 36px);margin:0 auto 18px;box-shadow:0 4px 15px rgba(29,196,245,.35);}
-.encaisser-btn:active{opacity:.9;}
-.encaisser-btn svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+/* QR Card */
+.qr-card{border-radius:22px;margin:0 auto -72px;width:calc(100% - 28px);position:relative;overflow:hidden;background:linear-gradient(135deg,#1BBBF0 0%,#0E96CA 100%);}
+.qr-card::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.07) 0,rgba(255,255,255,.07) 1px,transparent 0,transparent 50%),repeating-linear-gradient(-45deg,rgba(255,255,255,.07) 0,rgba(255,255,255,.07) 1px,transparent 0,transparent 50%);background-size:20px 20px;pointer-events:none;}
+.qr-inner{display:flex;align-items:center;justify-content:center;padding:18px 18px 14px;position:relative;}
+.qr-code-box{background:#fff;border-radius:16px;padding:14px 14px 10px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);}
+.qr-canvas-wrap{width:160px;height:160px;display:flex;align-items:center;justify-content:center;}
+.qr-canvas-wrap canvas,.qr-canvas-wrap img{width:160px!important;height:160px!important;display:block;}
+.welcome-qr canvas,.welcome-qr img{display:block;}
+.scan-btn{display:flex;align-items:center;gap:6px;color:var(--ink);font-weight:700;font-size:14px;cursor:pointer;background:none;border:none;padding:0;}
+.qr-penguin{position:absolute;right:16px;bottom:10px;font-size:42px;line-height:1;}
 
 /* Home body */
-.home-body{background:#fff;border-radius:28px 28px 0 0;padding:24px 0 40px;flex:1;}
+.home-body{background:#fff;border-radius:28px 28px 0 0;padding:84px 0 40px;flex:1;}
 .action-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 4px;padding:0 8px 20px;}
 .action-tile{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;padding:2px;}
 .tile-circle{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
 .action-tile:active .tile-circle{transform:scale(.9);}
 .action-tile span{font-size:11.5px;font-weight:700;color:var(--ink);text-align:center;line-height:1.2;}
-
-/* Badge sans frais */
-.sans-frais-badge{background:var(--green);color:#fff;font-size:9px;font-weight:800;padding:2px 8px;border-radius:999px;margin-top:2px;letter-spacing:.3px;}
 
 /* Promo banner */
 .promo-banner{background:linear-gradient(135deg,#EEE6FF,#E8EDFF);border-radius:18px;margin:4px 14px 18px;padding:16px;position:relative;overflow:hidden;}
@@ -255,6 +256,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .welcome-qr{display:flex;align-items:center;justify-content:center;margin-top:18px;padding:14px;background:#fff;border:1px solid var(--line);border-radius:18px;}
 .welcome-qr canvas{display:block;}
 
+
 /* ══════════ PARAMÈTRES ══════════ */
 .set-profile{display:flex;align-items:center;gap:14px;background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;cursor:pointer}
 .set-group{background:#fff;border-radius:16px;overflow:hidden}
@@ -276,5 +278,5 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .admin-mini-btn.danger{border-color:#F5C2C2;color:#DC2626}
 body.dark-mode{background:#12183F}
 
-/* === QR retiré mais encaisser visible === */
+/* === QR retiré === */
 .qr-card,.qr-inner,.qr-code-box,#h-qr,.scan-btn,.qr-penguin,.welcome-qr,#wc-qr{display:none !important;}

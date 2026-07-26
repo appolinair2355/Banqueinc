@@ -96,8 +96,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .top-actions{display:flex;align-items:center;gap:10px;}
 .top-icon{cursor:pointer;opacity:.85;display:flex;}
 .admin-badge{background:rgba(255,200,0,.2);border:1.5px solid rgba(255,200,0,.6);color:#FFD700;font-size:10px;font-weight:900;border-radius:6px;padding:3px 8px;cursor:pointer;letter-spacing:.5px;}
-.bal-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:18px;}
-.bal-amount{color:#fff;font-size:42px;font-weight:800;letter-spacing:-1px;}
+.solde-label{text-align:center;color:rgba(255,255,255,.7);font-size:13px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:2px;}
+.bal-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;}
+.bal-amount{color:#fff;display:inline-flex;align-items:baseline;line-height:1;}
+.bal-num{font-size:46px;font-weight:800;letter-spacing:-1.5px;}
+.bal-cur{font-size:31px;font-weight:900;letter-spacing:-.5px;margin-left:1px;-webkit-text-stroke:.7px currentColor;}
 .bal-eye{cursor:pointer;display:flex;align-items:center;opacity:.85;}
 
 /* QR Card */

@@ -50,6 +50,7 @@ let bannerDismissed = false;
 /* ── UTILS ── */
 const fmt = n => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[\u202f\s]/g, ' ') + ' F';
 const $ = id => document.getElementById(id);
+const balHTML = n => '<span class="bal-num">' + (n === null ? '•••••' : (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[\u202f\s]/g, ' ')) + '</span><span class="bal-cur">F</span>';
 const digits = s => (s || '').replace(/\D/g, '');
 const fullName = a => (a.prenom + ' ' + a.nom).trim();
 const nowLabel = () => {
@@ -317,7 +318,7 @@ function refreshHome() {
   reload();
   if (!me) { go('s-phone'); return; }
   $('h-avatar').textContent  = (me.prenom[0] || '?').toUpperCase();
-  $('h-bal').textContent     = balVisible ? fmt(me.balance) : '••••• F';
+  $('h-bal').innerHTML       = balHTML(balVisible ? me.balance : null);
   $('admin-btn').style.display = me.isAdmin ? 'flex' : 'none';
   $('link-tile').style.display = isMerchant() ? 'flex' : 'none';
   renderQR();

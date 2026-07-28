@@ -280,3 +280,48 @@ body.dark-mode{background:#12183F}
 
 /* === QR retiré === */
 .qr-card,.qr-inner,.qr-code-box,#h-qr,.scan-btn,.qr-penguin,.welcome-qr,#wc-qr{display:none !important;}
+
+/* ══ WAVE MARCHAND HOME ══ */
+.mch{background:#fff;}
+.mch-top{background:#EDEEF0;padding:10px 16px 18px;}
+.mch .top-bar{margin-bottom:6px;}
+.mch .wave-brand-sm{color:#1B2A6B;}
+.mch .avatar{background:#1B2A6B;color:#fff;}
+.mch .solde-label{color:#8A93A6;font-size:12px;font-weight:600;letter-spacing:3px;margin-top:6px;text-align:center;}
+.mch .bal-row{margin:2px 0 14px;gap:8px;}
+.mch .bal-amount{color:#1B2A6B;display:inline-flex;align-items:baseline;line-height:1;font-style:italic;}
+.mch .bal-num{font-size:44px;font-weight:900;letter-spacing:-2px;}
+.mch .bal-cur{font-size:28px;font-weight:900;margin-left:2px;-webkit-text-stroke:1px currentColor;}
+.mch .bal-eye{color:#1B2A6B;opacity:1;display:inline-flex;align-items:center;}
+.mch .bal-eye svg{width:26px;height:26px;fill:#1B2A6B;}
+
+.encaisser-btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;border:none;border-radius:14px;background:#25C7F0;color:#fff;font-weight:800;font-size:17px;letter-spacing:.5px;padding:16px;cursor:pointer;box-shadow:0 6px 16px rgba(37,199,240,.25);}
+.encaisser-btn:active{opacity:.9;}
+
+.mch-actions-card{background:#fff;padding:22px 8px 8px;border-bottom:8px solid #EDEEF0;}
+.mch .action-grid{grid-template-columns:repeat(4,1fr);gap:22px 4px;padding:0 6px 14px;}
+.mch .tile-circle{width:56px;height:56px;}
+.mch .action-tile{position:relative;}
+.mch .action-tile span{font-size:13px;font-weight:600;color:#1B2A6B;line-height:1.15;}
+.tile-badge{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);background:#25B94A;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;font-style:normal;white-space:nowrap;}
+
+.mch-body{background:#fff;padding:6px 0 40px;flex:1;}
+.mch .tx-t{color:#1B2A6B;font-weight:700;font-size:15px;white-space:normal;}
+.mch .tx-a.neg{color:#1B2A6B;}
+.mch .tx-a.pos{color:#1B2A6B;}
+
+/* ══ Wave Marchand — corrections ══ */
+.mch .top-bar{justify-content:flex-start;margin:0 0 2px;min-height:30px;}
+.mch .top-icon.set-left{opacity:1;}
+.mch-top{background:#EFEFF1;padding:8px 16px 18px;}
+.mch .solde-label{color:#8A93A6;font-size:13px;font-weight:500;letter-spacing:1.2px;margin-top:2px;}
+.mch .bal-row{margin:0 0 18px;gap:6px;}
+.mch .bal-amount{font-style:italic;color:#1B2A6B;}
+.mch .bal-num{font-size:40px;font-weight:900;letter-spacing:-1px;-webkit-text-stroke:1.2px #1B2A6B;}
+.mch .bal-cur{font-size:26px;font-weight:800;margin-left:0;-webkit-text-stroke:0;}
+.mch .bal-eye svg{width:22px;height:22px;}
+.mch .admin-badge{margin-left:auto;}
+.mch{background:#fff;}
+.mch-body{background:#fff;flex:1 0 auto;}
+
+html,body{background:#fff;}

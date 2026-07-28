@@ -48,15 +48,18 @@ let adminCreditTarget = null;
 let bannerDismissed = false;
 
 /* ── UTILS ── */
-const fmt = n => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[\u202f\s]/g, ' ') + ' F';
+const EYE_ON  = '<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"/></svg>';
+const EYE_OFF = '<svg viewBox="0 0 24 24"><path d="M12 6.5c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92A11.87 11.87 0 0023 11.5C21.27 7.11 17 4 12 4c-1.4 0-2.74.25-3.98.7l2.16 2.16C10.75 6.63 11.36 6.5 12 6.5zM2.71 3.16a1 1 0 000 1.41l1.97 1.97A11.83 11.83 0 001 11.5C2.73 15.89 7 19 12 19c1.52 0 2.98-.29 4.32-.82l2.72 2.72a1 1 0 001.41-1.41L4.12 3.16a1 1 0 00-1.41 0zM12 16.5A5 5 0 017.03 11c0-.5.08-.98.22-1.43l1.55 1.55c-.01.06-.02.12-.02.18a3 3 0 003.66 2.93l1.55 1.55c-.62.28-1.3.42-2 .42z"/></svg>';
+
+const fmt = n => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[\u202f\s]/g, '.') + 'F';
 const $ = id => document.getElementById(id);
 const balHTML = n => '<span class="bal-num">' + (n === null ? '•••••' : (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[\u202f\s]/g, ' ')) + '</span><span class="bal-cur">F</span>';
 const digits = s => (s || '').replace(/\D/g, '');
 const fullName = a => (a.prenom + ' ' + a.nom).trim();
 const nowLabel = () => {
   const d = new Date();
-  const M = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
-  return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()} à ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const M = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
+  return `${M[d.getMonth()]} ${d.getDate()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 };
 const findAcc = (phone, code) => DB.accounts().find(a => a.phone === phone && a.countryCode === code);
 function persist(acc) {
@@ -323,15 +326,14 @@ function refreshHome() {
   reload();
   if (!me) { go('s-phone'); return; }
   $('h-avatar').textContent  = (me.prenom[0] || '?').toUpperCase();
-  $('h-bal').innerHTML       = balHTML(balVisible ? me.balance : null);
+  $('h-bal').innerHTML       = balHTML(balVisible ? me.balance : (me.balance===0 ? 0 : null));
+  var _e=$('bal-eye'); if(_e){ _e.innerHTML = balVisible ? EYE_ON : EYE_OFF; }
   $('admin-btn').style.display = me.isAdmin ? 'flex' : 'none';
-  $('link-tile').style.display = isMerchant() ? 'flex' : 'none';
   renderQR();
   renderTxs();
-  if (bannerDismissed) $('promo-banner').style.display = 'none';
 }
 function toggleBal() { balVisible = !balVisible; refreshHome(); }
-function dismissBanner() { bannerDismissed = true; $('promo-banner').style.display = 'none'; }
+function dismissBanner() { bannerDismissed = true; var b = $('promo-banner'); if (b) b.style.display = 'none'; }
 
 function qrPayload(acc) {
   return `${location.origin}${location.pathname}#pay=${acc.phone}&code=${encodeURIComponent(acc.countryCode)}&name=${encodeURIComponent(fullName(acc))}`;
@@ -349,7 +351,9 @@ function drawQR(el, payload, size) {
   });
 }
 function renderQR() {
-  drawQR($('h-qr'), me.qr || qrPayload(me), 160);
+  const el = $('h-qr');
+  if (!el) return;
+  drawQR(el, me.qr || qrPayload(me), 160);
 }
 
 /* ══════════ SCANNER QR (caméra réelle) ══════════ */
@@ -415,7 +419,7 @@ function renderTxs() {
         <div class="tx-ic">${t.icon}</div>
         <div class="tx-main">
           <div class="tx-t">${t.title}</div>
-          <div class="tx-s">${t.date}</div>
+          <div class="tx-s">${t.date}${t.person ? ' • ' + t.person : ''}</div>
         </div>
         <div class="tx-a ${t.amount < 0 ? 'neg' : 'pos'}">${t.amount > 0 ? '+' : ''}${fmt(t.amount)}</div>
       </div>`).join('');
@@ -609,7 +613,7 @@ function addCoffre() {
 /* ══════════ LIEN DE PAIEMENT ══════════ */
 function isMerchant() { return !!me && (me.isAdmin || me.accountType === 'marchand'); }
 function openLink() {
-  if (!isMerchant()) { toast("Réservé aux comptes marchands"); return; }
+
   $('lk-amount').value = ''; $('lk-note').value = ''; $('lk-result').innerHTML = '';
   const myLink = `${location.origin}${location.pathname}#pay=${me.phone}&code=${encodeURIComponent(me.countryCode)}&name=${encodeURIComponent(fullName(me))}`;
   $('my-link-display').innerHTML = `
@@ -621,7 +625,7 @@ function openLink() {
   go('s-link');
 }
 function createLink() {
-  if (!isMerchant()) { toast("Réservé aux comptes marchands"); return; }
+
   const v = parseInt(digits($('lk-amount').value) || '0', 10);
   if (!v) { toast('Entrez un montant'); return; }
   const note = $('lk-note').value.trim();
@@ -655,7 +659,7 @@ function renderExpenses() {
       <div class="exp-total-amt">${fmt(total)}</div>
     </div>` +
     (out.length
-      ? out.map(t=>`<div class="tx"><div class="tx-ic">${t.icon}</div><div class="tx-main"><div class="tx-t">${t.title}</div><div class="tx-s">${t.date}</div></div><div class="tx-a neg">${fmt(t.amount)}</div></div>`).join('')
+      ? out.map(t=>`<div class="tx"><div class="tx-ic">${t.icon}</div><div class="tx-main"><div class="tx-t">${t.title}</div><div class="tx-s">${t.date}${t.person ? ' • ' + t.person : ''}</div></div><div class="tx-a neg">${fmt(t.amount)}</div></div>`).join('')
       : '<div class="empty">Aucune dépense pour le moment.</div>');
   go('s-expenses');
 }

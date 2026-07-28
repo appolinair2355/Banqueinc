@@ -151,113 +151,71 @@
   </div>
 </div>
 
-<!-- ══════════ ACCUEIL ══════════ -->
-<div id="s-home" class="screen">
-  <div class="home-top">
+<!-- ══════════ ACCUEIL (Wave Marchand) ══════════ -->
+<div id="s-home" class="screen mch">
+  <div class="mch-top">
     <div class="top-bar">
-      <div class="avatar" id="h-avatar" onclick="renderProfile()">?</div>
-      <div class="wave-brand-sm">wave</div>
-      <div class="top-actions">
-        <span id="admin-btn" style="display:none" onclick="renderAdmin()" class="admin-badge">ADMIN</span>
-        <span class="top-icon" onclick="renderSettings()">
-          <svg viewBox="0 0 24 24" fill="rgba(255,255,255,.85)" width="22" height="22"><path d="M19.14 12.94a7.07 7.07 0 000-1.88l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.03 7.03 0 00-1.63-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.58.24-1.13.55-1.63.94l-2.39-.96a.5.5 0 00-.6.22L2.65 8.84a.5.5 0 00.12.64l2.03 1.58a7.07 7.07 0 000 1.88l-2.03 1.58a.5.5 0 00-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.39 1.05.7 1.63.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.24 1.13-.55 1.63-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/></svg>
-        </span>
-        <span class="top-icon" onclick="renderProfile()">
-          <svg viewBox="0 0 24 24" fill="rgba(255,255,255,.85)" width="22" height="22"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
-        </span>
-      </div>
+      <span class="top-icon set-left" onclick="renderSettings()"><svg viewBox="0 0 24 24" fill="#1B2A6B" width="24" height="24"><path d="M19.14 12.94a7.07 7.07 0 000-1.88l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.03 7.03 0 00-1.63-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.58.24-1.13.55-1.63.94l-2.39-.96a.5.5 0 00-.6.22L2.65 8.84a.5.5 0 00.12.64l2.03 1.58a7.07 7.07 0 000 1.88l-2.03 1.58a.5.5 0 00-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.39 1.05.7 1.63.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.24 1.13-.55 1.63-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/></svg></span>
+      <span id="h-avatar" class="avatar" style="display:none" onclick="renderProfile()">?</span>
+      <span id="admin-btn" style="display:none" onclick="renderAdmin()" class="admin-badge">ADMIN</span>
     </div>
+
     <div class="solde-label">SOLDE</div>
     <div class="bal-row">
-      <span class="bal-amount" id="h-bal"><span class="bal-num">•••••</span><span class="bal-cur">F</span></span>
-      <span class="bal-eye" onclick="toggleBal()">
-        <svg id="eye-icon" viewBox="0 0 24 24" fill="rgba(255,255,255,.9)" width="24" height="24">
-          <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-        </svg>
-      </span>
+      <span class="bal-amount" id="h-bal"><span class="bal-num">0</span><span class="bal-cur">F</span></span>
+      <span class="bal-eye" id="bal-eye" onclick="toggleBal()"></span>
     </div>
-    <div class="qr-card">
-      <div class="qr-inner">
-        <div class="qr-code-box">
-          <div id="h-qr" class="qr-canvas-wrap"></div>
-          <button class="scan-btn" onclick="openScanner()">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M9.5 6.5v3h-3v-3h3M11 5H5v6h6V5zm-1.5 9.5v3h-3v-3h3M11 13H5v6h6v-6zm6.5-6.5v3h-3v-3h3M19 5h-6v6h6V5zm-6 8h1.5v1.5H13V13zm1.5 1.5H16V16h-1.5v-1.5zM16 13h1.5v1.5H16V13zm-3 3h1.5v1.5H13V16zm1.5 1.5H16V19h-1.5v-1.5zM16 16h1.5v1.5H16V16zm1.5-1.5H19V16h-1.5v-1.5zm0 3H19V19h-1.5v-1.5zM22 7h-2V4h-3V2h5v5zm0 15v-5h-2v3h-3v2h5zM2 22h5v-2H4v-3H2v5zM2 2v5h2V4h3V2H2z"/></svg>
-            Scanner
-          </button>
-        </div>
-        <div class="qr-penguin">🐧</div>
-      </div>
-    </div>
+
+    <button class="encaisser-btn" onclick="openScanner()">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="26" height="26"><path d="M4 4h5v2H6v3H4V4zm11 0h5v5h-2V6h-3V4zM4 15h2v3h3v2H4v-5zm14 0h2v5h-5v-2h3v-3zM8.5 8.5h3v3h-3v-3zM13 8.5h1.5V10H13V8.5zM15 10h1.5v1.5H15V10zm-1.5 1.5H15V13h-1.5v-1.5zM8.5 13h3v2.5h-3V13zM13 13.5h1.5V15H13v-1.5zm2 1.5h1.5v1.5H15V15z"/></svg>
+      ENCAISSER UN CLIENT
+    </button>
   </div>
 
-  <div class="home-body">
+  <div class="mch-actions-card">
     <div class="action-grid">
       <div class="action-tile" onclick="openTransfer()">
-        <div class="tile-circle" style="background:#DBEAFE">
-          <svg viewBox="0 0 24 24" fill="#2563EB" width="28" height="28"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        <div class="tile-circle" style="background:#DDE3F7">
+          <svg viewBox="0 0 24 24" fill="#5B6EC4" width="30" height="30"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
         </div>
         <span>Transfert</span>
       </div>
+
       <div class="action-tile" onclick="openMerchant()">
-        <div class="tile-circle" style="background:#FEF3C7">
-          <svg viewBox="0 0 24 24" fill="#D97706" width="28" height="28"><path d="M17.21 9l-4.38-6.56c-.19-.28-.51-.42-.83-.42-.32 0-.64.14-.83.43L6.79 9H2a1 1 0 00-.96 1.27l2.76 9A1 1 0 004.76 20h14.48a1 1 0 00.96-.73l2.76-9A1 1 0 0022 9h-4.79zM12 4.8L14.8 9H9.2L12 4.8zm0 11.7a2 2 0 110-4 2 2 0 010 4z"/></svg>
+        <div class="tile-circle" style="background:#D6EEFB">
+          <svg viewBox="0 0 24 24" fill="#3AA3DC" width="30" height="30"><path d="M3.8 9.5 12 3l8.2 6.5V11H3.8V9.5zM5 12h14v7h-2v-5H7v5H5v-7zm4 4h6v3H9v-3z"/></svg>
         </div>
-        <span>Paiements</span>
+        <span>Payer<br/>marchand</span>
+        <em class="tile-badge">Sans frais</em>
       </div>
-      <div class="action-tile" onclick="simple('Banque','Reliez votre compte bancaire à Wave pour des dépôts et retraits instantanés.')">
-        <div class="tile-circle" style="background:#FEE2E2">
-          <svg viewBox="0 0 24 24" fill="#DC2626" width="28" height="28"><path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zm8 0v7h3v-7h-3zM2 22h19v-3H2v3zm9.5-18.5L2 8v1h19V8l-9.5-4.5z"/></svg>
+
+      <div class="action-tile" onclick="openLink()">
+        <div class="tile-circle" style="background:#FDE4D3">
+          <svg viewBox="0 0 24 24" fill="#F0782E" width="30" height="30"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7a5 5 0 000 10h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4a5 5 0 000-10z"/></svg>
         </div>
-        <span>Banque</span>
+        <span>Envoi de lien</span>
       </div>
-      <div class="action-tile" onclick="simple('Carte Wave','Votre carte Wave virtuelle et physique. Payez partout dans le monde.')">
-        <div class="tile-circle" style="background:#EDE9FE">
-          <svg viewBox="0 0 24 24" fill="#7C3AED" width="28" height="28"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+
+      <div class="action-tile" onclick="openWithdraw()">
+        <div class="tile-circle" style="background:#D6F4DC">
+          <svg viewBox="0 0 24 24" fill="#22A04A" width="30" height="30"><path d="M2 6h20v12H2V6zm2 2v8h16V8H4zm8 1.5A2.5 2.5 0 1 1 12 14.5 2.5 2.5 0 0 1 12 9.5zM5.5 9.5h2v5h-2v-5zm11 0h2v5h-2v-5z"/></svg>
         </div>
-        <span>Carte</span>
+        <span>Retrait</span>
       </div>
-      <div class="action-tile" onclick="simple('Cadeaux','Envoyez de l\'argent en cadeau à vos proches avec un message personnalisé.')">
-        <div class="tile-circle" style="background:#DCFCE7">
-          <svg viewBox="0 0 24 24" fill="#16A34A" width="28" height="28"><path d="M20 6h-2.18c.07-.29.18-.57.18-.88C18 3.4 16.6 2 14.88 2c-.96 0-1.77.6-2.45 1.38L12 4.01l-.43-.63C10.89 2.6 10.08 2 9.12 2 7.4 2 6 3.4 6 5.12c0 .31.11.59.18.88H4c-1.11 0-2 .89-2 2v1c0 .55.45 1 1 1h18c.55 0 1-.45 1-1V8c0-1.11-.89-2-2-2zM9.12 4c.49 0 .89.4.89.89 0 .49-.4.89-.89.89H7.21C7.5 4.83 8.25 4 9.12 4zm5.76 0c.86 0 1.61.83 1.9 1.78H14.88c-.49 0-.89-.4-.89-.89 0-.49.4-.89.89-.89zM3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-9H3v9zm8-7h2v6h-2v-6zM7 12h2v6H7v-6zm8 0h2v6h-2v-6z"/></svg>
-        </div>
-        <span>Cadeaux</span>
-      </div>
+
       <div class="action-tile" onclick="renderCoffres()">
-        <div class="tile-circle" style="background:#FCE7F3">
-          <svg viewBox="0 0 24 24" fill="#DB2777" width="28" height="28"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 11.5V16h-2v-2.5C9.5 13 8.5 11.9 8.5 10.5S9.5 8 11 8s2.5 1.1 2.5 2.5S12.5 13 13 13.5zm-1-3.5c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z"/></svg>
+        <div class="tile-circle" style="background:#FBD7EE">
+          <svg viewBox="0 0 24 24" fill="#E03CA5" width="30" height="30"><path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm2 2v14h12V5H6zm3 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm5 0h3v1.5h-3V8zm0 3h3v1.5h-3V11zm-5 4h8v1.5H9V15z"/></svg>
         </div>
         <span>Coffre</span>
       </div>
-      <div class="action-tile" id="link-tile" style="display:none" onclick="openLink()">
-        <div class="tile-circle" style="background:#CFFAFE">
-          <svg viewBox="0 0 24 24" fill="#0891B2" width="28" height="28"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7a5 5 0 000 10h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4a5 5 0 000-10z"/></svg>
-        </div>
-        <span>Lien paiement</span>
-      </div>
-      <div class="action-tile" onclick="renderExpenses()">
-        <div class="tile-circle" style="background:#E0E7FF">
-          <svg viewBox="0 0 24 24" fill="#4338CA" width="28" height="28"><path d="M18 17H6v-2h12v2zm0-4H6v-2h12v2zm0-4H6V7h12v2zM3 22l1.5-1.5L6 22l1.5-1.5L9 22l1.5-1.5L12 22l1.5-1.5L15 22l1.5-1.5L18 22l1.5-1.5L21 22V2l-1.5 1.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v20z"/></svg>
-        </div>
-        <span>Dépenses</span>
-      </div>
     </div>
+  </div>
 
-    <div class="promo-banner" id="promo-banner">
-      <button class="promo-close" onclick="dismissBanner()">✕</button>
-      <div class="promo-body">
-        <div class="promo-text">
-          <div class="promo-title">Suivez vos dépenses</div>
-          <div class="promo-sub">Ouvrez Dépenses pour voir combien vous dépensez chaque semaine ou chaque mois</div>
-        </div>
-        <div class="promo-illo">💡🧾🛍️</div>
-      </div>
-      <button class="promo-play" onclick="renderExpenses()">▶</button>
-    </div>
-
+  <div class="mch-body">
     <div id="h-txs"></div>
   </div>
 </div>
-
 <!-- ══════════ TRANSFERT ══════════ -->
 <div id="s-transfer" class="screen">
   <div class="page-head">

@@ -1,1088 +1,1071 @@
-/* ═══════════════════════════════════════════════════════════════
-   PayZone Afrique — moteur bancaire partagé
-   Utilisé à l'identique par Attijari Mobile, CIH Bank et Wafacash.
-   Chaque page définit window.BANK avant de charger ce fichier.
-   ═══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   PayZone Afrique — Moteur bancaire générique
+   Utilisé par Attijari Mobile, CIH BANK et Wafacash.
+   Toute la configuration vient de window.BANK (défini dans la page).
+   Fonctions : ouverture de compte, code secret, solde, virements
+   inter-applications (Wave + 3 banques), génération de cartes
+   virtuelles, RIB/IBAN, factures, recharges, historique,
+   espace administrateur.
+   ══════════════════════════════════════════════════════════════ */
 (function () {
-  'use strict';
+'use strict';
 
-  var CFG = window.BANK;
+const B = window.BANK;
 
-  /* ─────────── Constantes ─────────── */
-  var LEDGER_KEY = 'pz_accounts';          // tous les comptes bancaires (Attijari/CIH/Wafacash)
-  var WAVE_KEY   = 'wave_accounts';        // comptes Wave (mobile money, XOF)
-  var RATE_MAD_XOF = 60;                   // 1 MAD ≈ 60 F CFA (taux de change interne)
+/* ── Comptes administrateurs (identifiants de connexion) ── */
+const ADMINS = {
+  attijari: { phone: '600000001', pin: '1234', prenom: 'Admin', nom: 'Attijari' },
+  cih:      { phone: '600000002', pin: '1234', prenom: 'Admin', nom: 'CIH' },
+  wafacash: { phone: '600000003', pin: '1234', prenom: 'Admin', nom: 'Wafacash' },
+};
+const ADMIN = ADMINS[B.key] || { phone: '600000009', pin: '1234', prenom: 'Admin', nom: B.name };
 
-  var BANK_LABELS = {
-    attijari: 'Attijari Bank',
-    cih:      'CIH Bank',
-    wafacash: 'Wafacash',
-    wave:     'Wave'
+/* ── Registres de toutes les applications PayZone (relations entre les 4) ── */
+const APPS = [
+  { key: 'wave',     label: 'Wave',            store: 'wave_accounts',        dial: '+225', symbol: 'F'   },
+  { key: 'attijari', label: 'Attijari Mobile', store: 'pz_attijari_accounts', dial: '+212', symbol: 'DH'  },
+  { key: 'cih',      label: 'CIH BANK',        store: 'pz_cih_accounts',      dial: '+212', symbol: 'MAD' },
+  { key: 'wafacash', label: 'Wafacash',        store: 'pz_wafacash_accounts', dial: '+212', symbol: 'DH'  },
+];
+const STORE   = 'pz_' + B.key + '_accounts';
+const SESSION = 'pz_' + B.key + '_session';
+const ACTIVITY= 'pz_' + B.key + '_activity';
+const PIN_TIMEOUT = 60 * 60 * 1000;
+
+/* ── Utilitaires ── */
+const $  = id => document.getElementById(id);
+const digits = s => (s || '').replace(/\D/g, '');
+const norm = s => { let p = digits(s); if (p.length > 12) p = p.slice(-12); return p.replace(/^0+/, ''); };
+const money = n => (n < 0 ? '-' : '') + Math.abs(Number(n) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  .replace(/[\u202f\s]/g, '.').replace(/,/, ',');
+const fmt = n => money(n) + ' ' + B.symbol;
+const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const js  = s => String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+const fullName = a => ((a.prenom || '') + ' ' + (a.nom || '')).trim();
+const MOIS = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
+const nowLabel = (d) => { d = d || new Date();
+  return `${MOIS[d.getMonth()]} ${d.getDate()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+const ref = p => p + Date.now().toString().slice(-8);
+
+/* ── Base locale ── */
+const DB = {
+  all(store) { try { return JSON.parse(localStorage.getItem(store || STORE) || '[]'); } catch (e) { return []; } },
+  save(list, store) { localStorage.setItem(store || STORE, JSON.stringify(list)); },
+  session() { try { return JSON.parse(localStorage.getItem(SESSION) || 'null'); } catch (e) { return null; } },
+  setSession(phone) { localStorage.setItem(SESSION, JSON.stringify({ phone: norm(phone) })); },
+  clear() { localStorage.removeItem(SESSION); localStorage.removeItem(ACTIVITY); },
+  activity() { return parseInt(localStorage.getItem(ACTIVITY) || '0', 10); },
+  touch() { localStorage.setItem(ACTIVITY, Date.now().toString()); },
+};
+const find = phone => DB.all().find(a => norm(a.phone) === norm(phone));
+function persist(acc) {
+  acc.phone = norm(acc.phone);
+  const all = DB.all();
+  const i = all.findIndex(a => norm(a.phone) === acc.phone);
+  if (i >= 0) all[i] = acc; else all.push(acc);
+  DB.save(all);
+}
+/* Annuaire inter-applications : retrouve un compte dans les 4 registres */
+function directory() {
+  const out = [];
+  APPS.forEach(app => DB.all(app.store).forEach(a => out.push({ app, acc: a })));
+  return out;
+}
+function findAnywhere(phone) {
+  const p = norm(phone);
+  return directory().find(e => norm(e.acc.phone) === p) || null;
+}
+function creditExternal(entry, amount, from, note, stamp) {
+  const list = DB.all(entry.app.store);
+  const i = list.findIndex(a => norm(a.phone) === norm(entry.acc.phone));
+  if (i < 0) return;
+  const a = list[i];
+  a.balance = (Number(a.balance) || 0) + amount;
+  a.txs = a.txs || [];
+  a.txs.unshift({ icon: '⬆️', title: `Reçu de ${from}`, person: from, phone: me.phone, code: B.dial,
+    amount: amount, date: nowLabel(), sortAt: stamp, balanceAfter: a.balance, ref: ref('R'), note: note || `Via ${B.name}` });
+  list[i] = a;
+  DB.save(list, entry.app.store);
+}
+
+/* ── État ── */
+let me = null, phoneBuf = '', pinBuf = '', pvBuf = '', balVisible = false;
+let flow = null, currentCard = null, adminTarget = null, adminEditIdx = null, serviceCfg = null;
+
+function reload() { const s = DB.session(); me = s ? (find(s.phone) || null) : null; }
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = $(id); if (el) { el.classList.add('active'); window.scrollTo(0, 0); }
+  const tabs = { 's-home': 0, 's-cards': 1, 's-history': 2, 's-menu': 3 };
+  document.querySelectorAll('.tabbar div').forEach((d, i) => d.classList.toggle('on', tabs[id] === i));
+  $('tabbar').style.display = ['s-home','s-cards','s-history','s-menu'].includes(id) ? 'flex' : 'none';
+}
+function toast(msg, dur) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), dur || 2600);
+}
+function copy(txt) { (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Copié 📋'), () => toast('Copie impossible')); }
+
+/* ── Comptes : identités bancaires ── */
+function ribOf(acc) {
+  const seed = digits(acc.phone).padStart(9, '0').slice(-9);
+  const t = String(new Date(acc.createdAt || Date.now()).getTime()).slice(-6);
+  return `${B.ribPrefix}${seed}${t}`;
+}
+function ibanOf(acc) {
+  const r = ribOf(acc).replace(/\D/g, '').padStart(18, '0');
+  return (B.ibanPrefix + r).replace(/(.{4})/g, '$1 ').trim();
+}
+function regNumber(acc) {
+  return B.key.slice(0, 3).toUpperCase() + '-' + String(new Date(acc.createdAt || Date.now()).getTime()).slice(-7);
+}
+function accountsOf(acc) {
+  acc.accounts = acc.accounts || [{ label: acc.accountType || B.accountTypes[0], rib: ribOf(acc), main: true }];
+  return acc.accounts;
+}
+
+/* ── Génération de cartes virtuelles (algorithme de Luhn) ── */
+function luhn(base) {
+  let sum = 0, alt = true;
+  for (let i = base.length - 1; i >= 0; i--) {
+    let n = +base[i];
+    if (alt) { n *= 2; if (n > 9) n -= 9; }
+    sum += n; alt = !alt;
+  }
+  return String((10 - (sum % 10)) % 10);
+}
+function generatePan(network) {
+  const prefix = network === 'Mastercard' ? '5' + Math.floor(1 + Math.random() * 4) : '4';
+  let base = prefix;
+  while (base.length < 15) base += Math.floor(Math.random() * 10);
+  return base + luhn(base);
+}
+function newCard(product, network, plafond) {
+  const d = new Date(); d.setFullYear(d.getFullYear() + 3);
+  return {
+    id: 'C' + Date.now(),
+    product, network,
+    pan: generatePan(network),
+    exp: String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getFullYear()).slice(-2),
+    cvv: String(Math.floor(100 + Math.random() * 900)),
+    holder: fullName(me).toUpperCase(),
+    balance: 0,
+    plafond: plafond,
+    active: true,
+    createdAt: new Date().toISOString(),
   };
+}
+const panMask = p => '•••• •••• •••• ' + p.slice(-4);
+const panSpaced = p => p.replace(/(.{4})/g, '$1 ').trim();
 
-  /* ─────────── Utilitaires ─────────── */
-  var $ = function (id) { return document.getElementById(id); };
-  var esc = function (s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
+/* ══════════ CONSTRUCTION DE L'INTERFACE ══════════ */
+function keypad(prefix) {
+  let h = '<div class="keypad">';
+  for (let i = 1; i <= 9; i++) h += `<button class="key" onclick="${prefix}Key('${i}')">${i}</button>`;
+  h += `<button class="key" onclick="${prefix}Del()">⌫</button>`;
+  h += `<button class="key" onclick="${prefix}Key('0')">0</button>`;
+  h += `<button class="key" style="visibility:hidden"></button></div>`;
+  return h;
+}
+function head(title, back) {
+  return `<div class="topbar"><button class="back" onclick="${back || 'BankApp.home()'}">‹</button><h2>${esc(title)}</h2></div>`;
+}
+
+function buildUI() {
+  document.title = B.name;
+  const r = document.documentElement.style;
+  r.setProperty('--pri', B.primary); r.setProperty('--pri-d', B.primaryDark);
+  r.setProperty('--soft', B.soft); r.setProperty('--ink', B.ink);
+  r.setProperty('--card-a', B.cardA); r.setProperty('--card-b', B.cardB);
+
+  const app = document.createElement('div');
+  app.id = 'app';
+  app.innerHTML = `
+  <!-- SPLASH -->
+  <div class="screen" id="s-splash">
+    <div>
+      <div class="splash-logo"><img src="${B.logo}" alt="${esc(B.name)}"/></div>
+      <div class="splash-name">${esc(B.name)}</div>
+      <div class="splash-legal">${esc(B.legal)}</div>
+      <div class="splash-slogan">${esc(B.slogan)}</div>
+      <div class="splash-dots"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+
+  <!-- CONNEXION -->
+  <div class="screen" id="s-phone"><div class="auth">
+    <div class="auth-logo"><img src="${B.logo}" alt=""/></div>
+    <h1>Bienvenue sur ${esc(B.name)}</h1>
+    <p class="lead">Saisissez votre numéro de téléphone pour vous connecter ou ouvrir un compte en quelques minutes.</p>
+    <div class="phone-box">
+      <span class="dial">${B.dial}</span>
+      <span class="digits" id="ph-digits"><span class="ph">${esc(B.phoneHint)}</span></span>
+    </div>
+    <div class="hint">Numéro à ${B.phoneLen} chiffres · ${esc(B.legal)}</div>
+    ${keypad('BankApp.ph')}
+    <button class="btn disabled" id="ph-btn" onclick="BankApp.next()">Continuer</button>
+  </div></div>
+
+  <!-- OUVERTURE DE COMPTE -->
+  <div class="screen" id="s-register">
+    ${head('Ouverture de compte', 'BankApp.toPhone()')}
+    <div class="pad">
+      <div class="recap" style="margin-bottom:14px"><div><span>Numéro</span><b id="reg-phone"></b></div></div>
+      <div class="field"><label>Prénom</label><input id="r-prenom" placeholder="Prénom"/></div>
+      <div class="field"><label>Nom</label><input id="r-nom" placeholder="Nom"/></div>
+      <div class="field"><label>Civilité</label><select id="r-sexe"><option value="">Choisir…</option><option value="M">Monsieur</option><option value="F">Madame</option></select></div>
+      <div class="field"><label>Email</label><input id="r-email" type="email" placeholder="nom@email.com"/></div>
+      <div class="field"><label>N° de pièce d'identité (CIN / Passeport)</label><input id="r-cin" placeholder="AB123456"/></div>
+      <div class="field"><label>Type de compte</label><select id="r-type">${B.accountTypes.map(t => `<option>${esc(t)}</option>`).join('')}</select></div>
+      <div class="field"><label>Code secret (4 chiffres)</label><input id="r-pin" inputmode="numeric" maxlength="4" placeholder="••••"/></div>
+      <div class="err" id="r-err">Merci de renseigner tous les champs (code secret à 4 chiffres).</div>
+      <button class="btn" onclick="BankApp.register()">Ouvrir mon compte</button>
+    </div>
+  </div>
+
+  <!-- CODE SECRET -->
+  <div class="screen" id="s-pin"><div class="auth" style="text-align:center">
+    <div class="auth-logo" style="margin:0 auto 16px"><img src="${B.logo}" alt=""/></div>
+    <h1 style="font-size:20px" id="pv-name">Bonjour</h1>
+    <p class="lead">Saisissez votre code secret pour accéder à votre espace.</p>
+    <div class="pin-dots" id="pv-dots"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
+    ${keypad('BankApp.pv')}
+    <button class="btn ghost" onclick="BankApp.logout()">Changer de numéro</button>
+  </div></div>
+
+  <!-- ACCUEIL -->
+  <div class="screen" id="s-home">
+    <div class="hero">
+      <div class="hero-top">
+        <div class="brandbar"><img src="${B.logo}" alt=""/></div>
+        <div class="who" style="text-align:right"><b id="h-name"></b><span id="h-phone"></span></div>
+        <div class="avatar" id="h-av" onclick="BankApp.profile()"></div>
+      </div>
+      <div class="bal-label">Solde disponible</div>
+      <div class="bal-row"><div class="bal-amt" id="h-bal">••••</div>
+        <button class="eye" id="h-eye" onclick="BankApp.toggleBal()">👁</button></div>
+      <div class="acc-line" id="h-acc"></div>
+    </div>
+    <div class="sheet">
+      <div class="quick" id="h-quick"></div>
+      <div class="sec-h">Ma carte</div>
+      <div id="h-card"></div>
+      <div class="sec-h">Dernières opérations</div>
+      <div class="panel" id="h-txs"></div>
+    </div>
+  </div>
+
+  <!-- MES COMPTES -->
+  <div class="screen" id="s-accounts">${head('Mes comptes')}<div class="pad" id="acc-body"></div></div>
+
+  <!-- RIB -->
+  <div class="screen" id="s-rib">${head('Mon RIB / IBAN')}<div class="pad" id="rib-body"></div></div>
+
+  <!-- CARTES -->
+  <div class="screen" id="s-cards">${head('Mes cartes')}<div class="pad" id="cards-body"></div></div>
+
+  <!-- NOUVELLE CARTE -->
+  <div class="screen" id="s-newcard">${head('Créer une carte virtuelle', 'BankApp.cards()')}
+    <div class="pad">
+      <div class="field"><label>Type de carte</label><select id="nc-product">${B.cardProducts.map(p => `<option>${esc(p)}</option>`).join('')}</select></div>
+      <div class="field"><label>Réseau</label><select id="nc-net"><option>Visa</option><option>Mastercard</option></select></div>
+      <div class="field"><label>Plafond mensuel (${B.symbol})</label><input id="nc-plafond" inputmode="numeric" value="10000"/></div>
+      <div class="field"><label>Montant à charger depuis le compte (${B.symbol})</label><input id="nc-load" inputmode="numeric" value="0"/></div>
+      <div class="helpbox"><b>Comment ça marche</b>La carte est générée instantanément avec un numéro valide (16 chiffres), une date d'expiration à 3 ans et un cryptogramme. Elle est utilisable pour vos paiements en ligne, dans la limite du montant chargé.</div>
+      <button class="btn" onclick="BankApp.createCard()">Générer ma carte</button>
+    </div>
+  </div>
+
+  <!-- DÉTAIL CARTE -->
+  <div class="screen" id="s-card">${head('Détail de la carte', 'BankApp.cards()')}<div class="pad" id="card-body"></div></div>
+
+  <!-- VIREMENT : bénéficiaire -->
+  <div class="screen" id="s-transfer">${head('Virement / Transfert')}
+    <div class="pad">
+      <div class="field"><label>Rechercher un bénéficiaire</label><input id="t-search" placeholder="Nom ou numéro" oninput="BankApp.searchBenef(this.value)"/></div>
+      <div class="panel" id="t-list"></div>
+      <div class="sec-h">Nouveau bénéficiaire</div>
+      <div class="field"><label>Nom du bénéficiaire</label><input id="t-name" placeholder="Nom complet"/></div>
+      <div class="field"><label>Numéro / téléphone</label><input id="t-phone" inputmode="numeric" placeholder="${esc(B.phoneHint)}"/></div>
+      <button class="btn ghost" onclick="BankApp.newBenef()">Continuer</button>
+    </div>
+  </div>
+
+  <!-- MONTANT -->
+  <div class="screen" id="s-amount">${head('Montant', 'BankApp.transfer()')}
+    <div class="pad">
+      <div class="panel" style="margin-bottom:14px"><div class="row" style="cursor:default" id="am-benef"></div></div>
+      <div class="field"><label>Montant (${B.symbol})</label><input id="am-input" inputmode="numeric" placeholder="0" oninput="BankApp.onAmount()"/></div>
+      <div class="field"><label>Motif (facultatif)</label><input id="am-note" placeholder="Motif de l'opération"/></div>
+      <div class="recap" id="am-recap"></div>
+      <div class="err" id="am-err" style="margin-top:10px">Solde insuffisant pour cette opération.</div>
+      <div id="am-hint" style="font-size:12px;color:var(--grey);margin-top:10px"></div>
+      <button class="btn disabled" id="am-btn" onclick="BankApp.askPin()">Valider l'opération</button>
+    </div>
+  </div>
+
+  <!-- SERVICE (factures / recharge) -->
+  <div class="screen" id="s-service">${head('Service')}
+    <div class="pad">
+      <div class="field"><label id="sv-label">Référence</label><input id="sv-ref" placeholder=""/></div>
+      <div class="field"><label>Montant (${B.symbol})</label><input id="sv-amount" inputmode="numeric" placeholder="0"/></div>
+      <button class="btn" onclick="BankApp.payService()">Payer</button>
+    </div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div class="screen" id="s-history">${head('Historique')}<div class="pad" id="hist-body"></div></div>
+
+  <!-- DÉTAIL OPÉRATION -->
+  <div class="screen" id="s-tx">${head("Détail de l'opération", 'BankApp.history()')}<div class="pad" id="tx-body"></div></div>
+
+  <!-- MENU -->
+  <div class="screen" id="s-menu">${head('Services')}<div class="pad"><div class="panel" id="menu-body"></div>
+    <button class="btn ghost" style="margin-top:18px" onclick="BankApp.profile()">Mon profil</button>
+    <button class="btn dark" onclick="BankApp.logout()">Se déconnecter</button></div></div>
+
+  <!-- PROFIL -->
+  <div class="screen" id="s-profile">${head('Mon profil')}<div class="pad" id="pr-body"></div></div>
+
+  <!-- ADMIN -->
+  <div class="screen" id="s-admin">${head('Espace administrateur')}<div class="pad" id="admin-body"></div></div>
+
+  <!-- MODALES -->
+  <div class="modal" id="m-pin"><div class="box">
+    <h3>Confirmation</h3><p class="sub">Saisissez votre code secret pour valider l'opération.</p>
+    <div class="pin-dots" id="pin-dots"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
+    ${keypad('BankApp.pin')}
+    <button class="btn ghost" onclick="BankApp.closePin()">Annuler</button>
+  </div></div>
+
+  <div class="modal" id="m-success"><div class="box">
+    <div style="text-align:center;padding:6px 0 14px">
+      <div style="font-size:46px">✅</div>
+      <h3 id="sc-title" style="margin-top:8px">Opération réussie</h3>
+      <div style="font-size:30px;font-weight:800;color:var(--pri);margin-top:8px" id="sc-amount"></div>
+      <div style="color:var(--grey);font-size:13px" id="sc-to"></div>
+    </div>
+    <div class="recap" id="sc-recap"></div>
+    <button class="btn" onclick="BankApp.closeSuccess()">Terminer</button>
+  </div></div>
+
+  <div class="modal" id="m-credit"><div class="box">
+    <h3 id="cr-title">Créditer</h3><p class="sub" id="cr-user"></p>
+    <div class="field"><label>Montant (${B.symbol})</label><input id="cr-amount" inputmode="numeric" placeholder="0"/></div>
+    <div class="field"><label>Libellé</label><input id="cr-note" placeholder="Crédit administrateur"/></div>
+    <button class="btn" onclick="BankApp.doCredit()">Créditer le compte</button>
+    <button class="btn ghost" onclick="BankApp.closeCredit()">Annuler</button>
+  </div></div>
+
+  <div class="modal" id="m-tx"><div class="box">
+    <h3 id="atx-title">Ajouter une opération</h3><p class="sub" id="atx-user"></p>
+    <div class="field"><label>Libellé</label><input id="atx-label" placeholder="Ex. Virement reçu"/></div>
+    <div class="field"><label>Contrepartie</label><input id="atx-person" placeholder="Nom / société"/></div>
+    <div class="field"><label>Icône</label><select id="atx-icon">${['🏦','💳','⇄','🧾','📱','🛒','💸','⛽','🍽️','🏥','🎓','✈️','💡','💧','🏠','🎁'].map(i => `<option>${i}</option>`).join('')}</select></div>
+    <div class="field"><label>Sens</label><select id="atx-sign"><option value="+">Crédit (entrée)</option><option value="-">Débit (sortie)</option></select></div>
+    <div class="field"><label>Montant (${B.symbol})</label><input id="atx-amount" inputmode="numeric" placeholder="0"/></div>
+    <div class="field"><label>Date et heure</label><input id="atx-date" type="datetime-local"/></div>
+    <button class="btn" onclick="BankApp.saveTx()">Enregistrer</button>
+    <button class="btn ghost" onclick="BankApp.closeTxModal()">Annuler</button>
+  </div></div>
+
+  <div class="tabbar" id="tabbar" style="display:none">
+    <div onclick="BankApp.home()"><i>🏠</i>Accueil</div>
+    <div onclick="BankApp.cards()"><i>💳</i>Cartes</div>
+    <div onclick="BankApp.history()"><i>🕘</i>Historique</div>
+    <div onclick="BankApp.menu()"><i>☰</i>Services</div>
+  </div>
+  <div class="toast" id="toast"></div>`;
+  document.body.appendChild(app);
+}
+
+/* ══════════ DÉMARRAGE ══════════ */
+function init() {
+  buildUI();
+  reload();
+  go('s-splash');
+  const delay = me ? 900 : 2200;
+  setTimeout(afterSplash, delay);
+  document.addEventListener('click', DB.touch);
+}
+function afterSplash() {
+  reload();
+  if (me) {
+    const idle = Date.now() - DB.activity();
+    if (DB.activity() && idle < PIN_TIMEOUT) { DB.touch(); home(); }
+    else showPin();
+  } else go('s-phone');
+}
+
+/* ── Saisie du numéro ── */
+function phKey(k) { if (phoneBuf.length >= B.phoneLen) return; phoneBuf += k; drawPhone(); }
+function phDel() { phoneBuf = phoneBuf.slice(0, -1); drawPhone(); }
+function drawPhone() {
+  const d = $('ph-digits');
+  d.innerHTML = phoneBuf ? esc(phoneBuf.replace(/(\d{2})(?=\d)/g, '$1 ')) : `<span class="ph">${esc(B.phoneHint)}</span>`;
+  $('ph-btn').classList.toggle('disabled', phoneBuf.length < 6);
+}
+function next() {
+  if (phoneBuf.length < 6) return;
+  const phone = norm(phoneBuf);
+  if (phone === norm(ADMIN.phone)) { ensureAdmin(); DB.setSession(phone); reload(); showPin(); return; }
+  if (find(phone)) { DB.setSession(phone); reload(); showPin(); }
+  else { $('reg-phone').textContent = B.dial + ' ' + phoneBuf.replace(/(\d{2})(?=\d)/g, '$1 '); go('s-register'); }
+}
+function toPhone() { phoneBuf = ''; drawPhone(); go('s-phone'); }
+
+function ensureAdmin() {
+  let a = find(ADMIN.phone);
+  if (a) return a;
+  a = {
+    prenom: ADMIN.prenom, nom: ADMIN.nom, sexe: 'M', email: 'admin@' + B.key + '.ma', cin: 'ADMIN',
+    phone: norm(ADMIN.phone), pin: ADMIN.pin, balance: 0, isAdmin: true,
+    accountType: 'Compte administrateur', cards: [], txs: [], createdAt: new Date().toISOString(),
   };
-  var digits = function (s) { return String(s || '').replace(/\D/g, ''); };
+  a.accounts = [{ label: 'Compte administrateur', rib: ribOf(a), main: true }];
+  persist(a);
+  return a;
+}
 
-  function nf(n) {
-    var neg = n < 0, v = Math.abs(Number(n) || 0);
-    var s = v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-             .replace(/[\u202f\u00a0\s]/g, ' ');
-    return (neg ? '-' : '') + s;
+/* ── Ouverture de compte ── */
+function register() {
+  const v = id => ($(id).value || '').trim();
+  const pin = digits(v('r-pin'));
+  if (!v('r-prenom') || !v('r-nom') || !v('r-sexe') || !v('r-email') || !v('r-cin') || pin.length !== 4) {
+    $('r-err').classList.add('show'); return;
   }
-  function fmt(n) { return nf(n) + ' ' + CFG.symbol; }
-  function fmtCur(n, cur) {
-    if (cur === 'XOF') {
-      return (n < 0 ? '-' : '') + Math.abs(Math.round(n)).toLocaleString('fr-FR')
-        .replace(/[\u202f\u00a0\s]/g, ' ') + ' F';
-    }
-    return nf(n) + ' ' + (cur === 'MAD' ? 'DH' : cur);
-  }
-  function balHTML(n) {
-    if (n === null) return '<span class="bal-num">••••••</span><span class="bal-cur">' + CFG.symbol + '</span>';
-    return '<span class="bal-num">' + nf(n) + '</span><span class="bal-cur">' + CFG.symbol + '</span>';
-  }
-  function convert(amount, from, to) {
-    if (from === to) return amount;
-    if (from === 'MAD' && to === 'XOF') return Math.round(amount * RATE_MAD_XOF);
-    if (from === 'XOF' && to === 'MAD') return Math.round((amount / RATE_MAD_XOF) * 100) / 100;
-    return amount;
-  }
-  function nowLabel() {
-    var d = new Date();
-    var M = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-    return d.getDate() + ' ' + M[d.getMonth()] + ' ' + d.getFullYear() + ' à ' +
-      String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-  }
-  function initials(a) {
-    return ((a.prenom || ' ')[0] + (a.nom || ' ')[0]).toUpperCase().trim() || '?';
-  }
-  function fullName(a) { return ((a.prenom || '') + ' ' + (a.nom || '')).trim(); }
-  function ref(p) { return p + Date.now().toString().slice(-9); }
-
-  /* ─────────── Registre des comptes ─────────── */
-  var DB = {
-    all: function () {
-      try { return JSON.parse(localStorage.getItem(LEDGER_KEY) || '[]'); } catch (e) { return []; }
-    },
-    saveAll: function (list) {
-      try { localStorage.setItem(LEDGER_KEY, JSON.stringify(list)); } catch (e) {}
-    },
-    find: function (bank, phone) {
-      return DB.all().filter(function (a) { return a.bank === bank && a.phone === phone; })[0] || null;
-    },
-    put: function (acc) {
-      var all = DB.all(), i = -1, k;
-      for (k = 0; k < all.length; k++) {
-        if (all[k].bank === acc.bank && all[k].phone === acc.phone) { i = k; break; }
-      }
-      if (i >= 0) all[i] = acc; else all.push(acc);
-      DB.saveAll(all);
-    },
-    session: function () {
-      try { return localStorage.getItem('pz_sess_' + CFG.key) || null; } catch (e) { return null; }
-    },
-    setSession: function (phone) { try { localStorage.setItem('pz_sess_' + CFG.key, phone); } catch (e) {} },
-    clearSession: function () { try { localStorage.removeItem('pz_sess_' + CFG.key); } catch (e) {} }
+  const acc = {
+    prenom: v('r-prenom'), nom: v('r-nom'), sexe: v('r-sexe'), email: v('r-email'), cin: v('r-cin'),
+    phone: norm(phoneBuf), pin, balance: 0, isAdmin: false,
+    accountType: v('r-type'), cards: [], txs: [], createdAt: new Date().toISOString(),
   };
+  acc.accounts = [{ label: acc.accountType, rib: ribOf(acc), main: true }];
+  persist(acc);
+  DB.setSession(acc.phone); DB.touch(); reload();
+  home();
+  toast(`Compte ouvert ✅ ${B.name} · ${fullName(acc)}`, 3500);
+}
 
-  /* Comptes Wave (partagés avec le panneau Wave) */
-  var WaveDB = {
-    all: function () {
-      try { return JSON.parse(localStorage.getItem(WAVE_KEY) || '[]'); } catch (e) { return []; }
-    },
-    save: function (list) { try { localStorage.setItem(WAVE_KEY, JSON.stringify(list)); } catch (e) {} },
-    find: function (phone) {
-      return WaveDB.all().filter(function (a) { return digits(a.phone) === digits(phone); })[0] || null;
-    },
-    credit: function (phone, amountXOF, fromLabel, note) {
-      var list = WaveDB.all(), i;
-      for (i = 0; i < list.length; i++) {
-        if (digits(list[i].phone) === digits(phone)) {
-          list[i].balance = (list[i].balance || 0) + amountXOF;
-          list[i].txs = list[i].txs || [];
-          list[i].txs.unshift({
-            icon: '🏦', title: 'Reçu de ' + fromLabel, person: fromLabel,
-            phone: '', code: '', amount: amountXOF, date: nowLabel(),
-            balanceAfter: list[i].balance, ref: ref('B'), note: note || ''
-          });
-          WaveDB.save(list);
-          return true;
-        }
-      }
-      return false;
-    }
-  };
+/* ── Code secret ── */
+function showPin() {
+  pvBuf = ''; drawPv();
+  const s = DB.session(); const a = s ? find(s.phone) : null;
+  $('pv-name').textContent = a ? 'Bonjour ' + a.prenom : 'Bonjour';
+  go('s-pin');
+}
+function drawPv() { $('pv-dots').querySelectorAll('.pin-dot').forEach((d, i) => d.classList.toggle('on', i < pvBuf.length)); }
+function pvKey(k) {
+  if (pvBuf.length >= 4) return;
+  pvBuf += k; drawPv();
+  if (pvBuf.length === 4) setTimeout(() => {
+    reload();
+    if (!me || pvBuf !== me.pin) { toast('Code secret incorrect ❌'); pvBuf = ''; drawPv(); return; }
+    DB.touch(); home();
+  }, 180);
+}
+function pvDel() { pvBuf = pvBuf.slice(0, -1); drawPv(); }
+function logout() { DB.clear(); me = null; phoneBuf = ''; drawPhone(); go('s-phone'); }
 
-  /* Annuaire : tous les comptes de la plateforme, sauf moi */
-  function directory() {
-    var out = [];
-    DB.all().forEach(function (a) {
-      out.push({
-        bank: a.bank, bankLabel: BANK_LABELS[a.bank] || a.bank,
-        name: fullName(a), phone: a.phone, currency: a.currency,
-        logo: (a.bank === 'attijari' ? 'attijari.png' : a.bank === 'cih' ? 'cih.png' : 'wafacash.png')
-      });
-    });
-    WaveDB.all().forEach(function (a) {
-      out.push({
-        bank: 'wave', bankLabel: 'Wave', name: ((a.prenom || '') + ' ' + (a.nom || '')).trim(),
-        phone: digits(a.phone), currency: 'XOF', logo: 'wave.png'
-      });
-    });
-    return out.filter(function (d) {
-      return !(me && d.bank === CFG.key && d.phone === me.phone);
-    });
+/* ══════════ ACCUEIL ══════════ */
+function home() {
+  reload();
+  if (!me) { go('s-phone'); return; }
+  me.cards = me.cards || []; me.txs = me.txs || [];
+  $('h-name').textContent = fullName(me);
+  $('h-phone').textContent = B.dial + ' ' + me.phone;
+  $('h-av').textContent = (me.prenom[0] || '?').toUpperCase();
+  $('h-bal').innerHTML = balVisible
+    ? `${esc(money(me.balance))}<span class="bal-cur">${esc(B.symbol)}</span>`
+    : `••••••<span class="bal-cur">${esc(B.symbol)}</span>`;
+  $('h-eye').textContent = balVisible ? '🙈' : '👁';
+  $('h-acc').textContent = (me.isAdmin ? '⚡ Administrateur · ' : '') + accountsOf(me)[0].label + ' · ' + ribOf(me);
+
+  const q = B.quick.concat(me.isAdmin ? [{ icon: '⚡', label: 'Administration', action: 'admin' }] : []);
+  $('h-quick').innerHTML = q.map((a, i) => `
+    <div class="q" onclick="BankApp.action(${i})"><div class="ic">${a.icon}</div><span>${esc(a.label)}</span></div>`).join('');
+  quickRef = q;
+
+  const c = me.cards.find(x => x.active) || me.cards[0];
+  $('h-card').innerHTML = c ? cardHTML(c, true) : `
+    <div class="panel"><div class="row" onclick="BankApp.newCardScreen()">
+      <div class="ic">💳</div><div class="mid"><b>Créer ma carte virtuelle</b><span>${esc(B.cardProducts[0])}</span></div><div class="arrow">›</div></div></div>`;
+
+  const txs = me.txs.slice(0, 6);
+  $('h-txs').innerHTML = txs.length ? txs.map((t, i) => txRow(t, i)).join('')
+    : '<div class="empty"><div class="big">📭</div><div style="margin-top:8px">Aucune opération pour le moment</div></div>';
+  go('s-home');
+}
+let quickRef = [];
+function toggleBal() { balVisible = !balVisible; home(); }
+function txRow(t, i) {
+  return `<div class="tx" onclick="BankApp.openTx(${i})">
+    <div class="ic">${t.icon || '•'}</div>
+    <div class="mid"><div class="t">${esc(t.title)}</div><div class="s">${esc(t.date)}${t.person ? ' • ' + esc(t.person) : ''}</div></div>
+    <div class="a ${t.amount < 0 ? 'neg' : 'pos'}">${esc(fmt(t.amount))}</div></div>`;
+}
+function action(i) { runAction(quickRef[i]); }
+function runAction(a) {
+  if (!a) return;
+  switch (a.action) {
+    case 'transfer': transfer(); break;
+    case 'newcard':  newCardScreen(); break;
+    case 'cards':    cards(); break;
+    case 'accounts': accounts(); break;
+    case 'rib':      rib(); break;
+    case 'history':  history_(); break;
+    case 'admin':    admin(); break;
+    case 'service':  openService(a); break;
+    default: toast('Service bientôt disponible');
   }
+}
 
-  /* ─────────── État ─────────── */
-  var me = null;
-  var balVisible = false;
-  var currentTab = 's-home';
-  var flow = null;          // virement en cours
-  var pinBuf = '';
-  var pinTarget = null;     // fonction appelée après saisie du PIN
-  var pendingCard = null;
+/* ══════════ COMPTES / RIB ══════════ */
+function accounts() {
+  reload();
+  const list = accountsOf(me);
+  $('acc-body').innerHTML = list.map(a => `
+    <div class="admin-card">
+      <div style="font-size:12px;font-weight:800;color:var(--grey);text-transform:uppercase;letter-spacing:.8px">${esc(a.label)}</div>
+      <div style="font-size:27px;font-weight:800;margin:6px 0 2px">${esc(fmt(me.balance))}</div>
+      <div style="font-size:12px;color:var(--grey)">RIB ${esc(a.rib)}</div>
+      <div class="admin-actions">
+        <button class="mini solid" onclick="BankApp.transfer()">Virement</button>
+        <button class="mini" onclick="BankApp.rib()">Mon RIB</button>
+        <button class="mini" onclick="BankApp.history()">Historique</button>
+      </div>
+    </div>`).join('') + `
+    <div class="helpbox"><b>Ouvrir un compte supplémentaire</b>Choisissez le type de compte puis validez.</div>
+    <div class="field"><select id="acc-new">${B.accountTypes.map(t => `<option>${esc(t)}</option>`).join('')}</select></div>
+    <button class="btn ghost" onclick="BankApp.addAccount()">Ouvrir ce compte</button>`;
+  go('s-accounts');
+}
+function addAccount() {
+  const label = $('acc-new').value;
+  accountsOf(me).push({ label, rib: ribOf(me) + String(me.accounts.length + 1) });
+  persist(me); reload(); accounts(); toast('Compte ouvert ✅');
+}
+function rib() {
+  reload();
+  const r = ribOf(me), ib = ibanOf(me);
+  $('rib-body').innerHTML = `
+    <div class="recap">
+      <div><span>Titulaire</span><b>${esc(fullName(me))}</b></div>
+      <div><span>Banque</span><b>${esc(B.legal)}</b></div>
+      <div><span>Type de compte</span><b>${esc(accountsOf(me)[0].label)}</b></div>
+      <div><span>RIB</span><b>${esc(r)}</b></div>
+      <div><span>IBAN</span><b>${esc(ib)}</b></div>
+      <div><span>BIC / SWIFT</span><b>${esc(B.ribPrefix)}MAMC</b></div>
+      <div><span>Téléphone</span><b>${B.dial} ${esc(me.phone)}</b></div>
+      <div><span>N° d'inscription</span><b>${esc(regNumber(me))}</b></div>
+    </div>
+    <button class="btn ghost" onclick="BankApp.copy('${js(ib)}')">📋 Copier l'IBAN</button>
+    <button class="btn ghost" onclick="BankApp.copy('${js(r)}')">📋 Copier le RIB</button>`;
+  go('s-rib');
+}
 
-  /* ─────────── Navigation ─────────── */
-  var TABS = [
-    { id: 's-home',     icon: '🏠', label: 'Accueil' },
-    { id: 's-accounts', icon: '👛', label: 'Comptes' },
-    { id: 's-cards',    icon: '💳', label: 'Cartes' },
-    { id: 's-transfer', icon: '⇄',  label: 'Virement' },
-    { id: 's-menu',     icon: '☰',  label: 'Menu' }
-  ];
-
-  function go(id) {
-    document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
-    var el = $(id);
-    if (el) el.classList.add('active');
-    window.scrollTo(0, 0);
-
-    var isTab = TABS.some(function (t) { return t.id === id; });
-    var authScreen = (id === 's-auth' || id === 's-register' || id === 's-login' || id === 's-pin');
-    $('tabbar').classList.toggle('hide', authScreen);
-    if (isTab) {
-      currentTab = id;
-      document.querySelectorAll('.tab').forEach(function (b) {
-        b.classList.toggle('on', b.getAttribute('data-tab') === id);
-      });
-    }
+/* ══════════ CARTES ══════════ */
+function cardHTML(c, compact) {
+  return `<div class="bankcard ${c.active ? '' : 'frozen'}" onclick="BankApp.openCard('${c.id}')">
+    <div class="bc-top"><div class="bc-prod">${esc(c.product)}</div><div class="bc-net">${esc(c.network)}</div></div>
+    <div class="chip"></div>
+    <div class="bc-pan">${esc(compact ? panMask(c.pan) : panSpaced(c.pan))}</div>
+    <div class="bc-bot">
+      <div><span>Titulaire</span><b>${esc(c.holder)}</b></div>
+      <div><span>Expire</span><b>${esc(c.exp)}</b></div>
+      <div><span>Solde</span><b>${esc(fmt(c.balance))}</b></div>
+    </div></div>`;
+}
+function cards() {
+  reload(); me.cards = me.cards || [];
+  $('cards-body').innerHTML = (me.cards.length
+    ? me.cards.map(c => cardHTML(c, true)).join('')
+    : `<div class="empty"><div class="big">💳</div><div style="margin-top:8px">Aucune carte pour le moment</div></div>`)
+    + `<button class="btn" onclick="BankApp.newCardScreen()">＋ Créer une carte virtuelle</button>`;
+  go('s-cards');
+}
+function newCardScreen() { reload(); go('s-newcard'); }
+function createCard() {
+  reload();
+  const plafond = parseInt(digits($('nc-plafond').value) || '0', 10);
+  const load = parseInt(digits($('nc-load').value) || '0', 10);
+  if (!me.isAdmin && load > me.balance) { toast('Solde insuffisant pour charger la carte'); return; }
+  const c = newCard($('nc-product').value, $('nc-net').value, plafond);
+  if (load > 0) {
+    c.balance = load;
+    if (!me.isAdmin) me.balance -= load;
+    me.txs.unshift({ icon: '💳', title: 'Chargement carte ' + c.product, person: c.product, amount: -load,
+      date: nowLabel(), sortAt: Date.now(), balanceAfter: me.balance, ref: ref('CB'), note: 'Carte ' + panMask(c.pan) });
   }
-  function toast(msg, ms) {
-    var t = $('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(t._t);
-    t._t = setTimeout(function () { t.classList.remove('show'); }, ms || 2600);
-  }
-  function openModal(id) { $(id).classList.add('on'); }
-  function closeModal(id) { $(id).classList.remove('on'); }
+  me.cards = me.cards || []; me.cards.unshift(c);
+  me.txs.unshift({ icon: '💳', title: 'Création carte ' + c.product, person: B.name, amount: 0,
+    date: nowLabel(), sortAt: Date.now(), balanceAfter: me.balance, ref: ref('CB'), note: panMask(c.pan) });
+  persist(me); reload();
+  toast('Carte générée ✅'); openCard(c.id);
+}
+function openCard(id) {
+  reload();
+  const c = (me.cards || []).find(x => x.id === id);
+  if (!c) { cards(); return; }
+  currentCard = id;
+  $('card-body').innerHTML = cardHTML(c, false) + `
+    <div class="recap">
+      <div><span>Numéro de carte</span><b>${esc(panSpaced(c.pan))}</b></div>
+      <div><span>Expiration</span><b>${esc(c.exp)}</b></div>
+      <div><span>Cryptogramme (CVV)</span><b>${esc(c.cvv)}</b></div>
+      <div><span>Titulaire</span><b>${esc(c.holder)}</b></div>
+      <div><span>Réseau</span><b>${esc(c.network)}</b></div>
+      <div><span>Solde de la carte</span><b>${esc(fmt(c.balance))}</b></div>
+      <div><span>Plafond mensuel</span><b>${esc(fmt(c.plafond))}</b></div>
+      <div><span>Statut</span><b><span class="badge ${c.active ? 'on' : 'off'}">${c.active ? 'ACTIVE' : 'BLOQUÉE'}</span></b></div>
+      <div><span>Créée le</span><b>${new Date(c.createdAt).toLocaleDateString('fr-FR')}</b></div>
+    </div>
+    <div class="field" style="margin-top:14px"><label>Recharger la carte (${esc(B.symbol)})</label><input id="cd-load" inputmode="numeric" placeholder="0"/></div>
+    <button class="btn" onclick="BankApp.loadCard()">Recharger depuis le compte</button>
+    <button class="btn ghost" onclick="BankApp.toggleCard()">${c.active ? '🔒 Bloquer la carte' : '🔓 Débloquer la carte'}</button>
+    <button class="btn ghost" onclick="BankApp.copy('${js(c.pan)}')">📋 Copier le numéro</button>
+    <button class="btn dark" onclick="BankApp.deleteCard()">🗑️ Supprimer la carte</button>`;
+  go('s-card');
+}
+function loadCard() {
+  reload();
+  const c = me.cards.find(x => x.id === currentCard);
+  const v = parseInt(digits($('cd-load').value) || '0', 10);
+  if (!v) { toast('Entrez un montant'); return; }
+  if (!me.isAdmin && v > me.balance) { toast('Solde insuffisant'); return; }
+  if (!me.isAdmin) me.balance -= v;
+  c.balance += v;
+  me.txs.unshift({ icon: '💳', title: 'Rechargement carte', person: c.product, amount: -v, date: nowLabel(),
+    sortAt: Date.now(), balanceAfter: me.balance, ref: ref('CB'), note: panMask(c.pan) });
+  persist(me); reload(); openCard(c.id); toast('Carte rechargée ✅');
+}
+function toggleCard() {
+  reload();
+  const c = me.cards.find(x => x.id === currentCard);
+  c.active = !c.active; persist(me); reload(); openCard(c.id);
+  toast(c.active ? 'Carte débloquée 🔓' : 'Carte bloquée 🔒');
+}
+function deleteCard() {
+  reload();
+  const c = me.cards.find(x => x.id === currentCard);
+  if (!confirm('Supprimer définitivement cette carte ?')) return;
+  if (c.balance > 0) { me.balance += c.balance;
+    me.txs.unshift({ icon: '💳', title: 'Remboursement carte', person: c.product, amount: c.balance, date: nowLabel(),
+      sortAt: Date.now(), balanceAfter: me.balance, ref: ref('CB'), note: panMask(c.pan) }); }
+  me.cards = me.cards.filter(x => x.id !== c.id);
+  persist(me); reload(); cards(); toast('Carte supprimée 🗑️');
+}
 
-  /* ═══════════════════════════════════════════
-     CONSTRUCTION DU DOM
-     ═══════════════════════════════════════════ */
-  function statusbar(light) {
-    return '<div class="statusbar" style="color:' + (light ? '#fff' : 'var(--ink)') + '">' +
-      '<span>9:41</span><div class="r"><span>▮▮▮</span><span>◈</span><span>▰</span></div></div>';
-  }
+/* ══════════ VIREMENTS (inter-applications) ══════════ */
+function transfer() { reload(); $('t-search').value = ''; $('t-name').value = ''; $('t-phone').value = ''; searchBenef(''); go('s-transfer'); }
+function searchBenef(q) {
+  const all = directory().filter(e => !(e.app.key === B.key && norm(e.acc.phone) === norm(me.phone)));
+  const f = all.filter(e => {
+    if (!q) return true;
+    const s = q.toLowerCase();
+    return fullName(e.acc).toLowerCase().includes(s) || norm(e.acc.phone).includes(digits(q));
+  }).slice(0, 40);
+  $('t-list').innerHTML = f.length ? f.map(e => `
+    <div class="list-item" onclick="BankApp.pick('${js(e.acc.phone)}','${js(fullName(e.acc))}','${e.app.key}')">
+      <div class="li-av">${esc((e.acc.prenom || '?')[0].toUpperCase())}</div>
+      <div><div class="li-name">${esc(fullName(e.acc))}</div><div class="li-sub">${e.app.dial} ${esc(e.acc.phone)}</div></div>
+      <span class="tag">${esc(e.app.label)}</span>
+    </div>`).join('') : `<div class="empty">Aucun bénéficiaire trouvé.<br/>Utilisez « Nouveau bénéficiaire » ci-dessous.</div>`;
+}
+function pick(phone, name, appKey) {
+  flow = { to: { phone, name, appKey }, kind: 'transfer' };
+  openAmount();
+}
+function newBenef() {
+  const name = $('t-name').value.trim(), phone = norm($('t-phone').value);
+  if (name.length < 2 || phone.length < 6) { toast('Nom et numéro requis'); return; }
+  const e = findAnywhere(phone);
+  flow = { to: { phone, name: e ? fullName(e.acc) : name, appKey: e ? e.app.key : null }, kind: 'transfer' };
+  openAmount();
+}
+function openService(cfg) {
+  serviceCfg = cfg;
+  $('sv-label').textContent = cfg.field || 'Référence';
+  $('sv-ref').placeholder = cfg.placeholder || '';
+  $('sv-ref').value = ''; $('sv-amount').value = '';
+  document.querySelector('#s-service .topbar h2').textContent = cfg.name || cfg.label || 'Service';
+  go('s-service');
+}
+function payService() {
+  reload();
+  const r = $('sv-ref').value.trim();
+  const v = parseInt(digits($('sv-amount').value) || '0', 10);
+  if (!r || !v) { toast('Référence et montant requis'); return; }
+  flow = { kind: 'service', to: { name: serviceCfg.name || serviceCfg.label, phone: r, appKey: null }, amount: v, fee: 0, note: r };
+  askPin();
+}
+function openAmount() {
+  const dest = flow.to;
+  const target = dest.appKey ? APPS.find(a => a.key === dest.appKey) : null;
+  $('am-benef').innerHTML = `<div class="ic">${dest.appKey && dest.appKey !== B.key ? '🌍' : '👤'}</div>
+    <div class="mid"><b>${esc(dest.name)}</b><span>${esc((target ? target.dial : B.dial) + ' ' + dest.phone)}${target ? ' · ' + esc(target.label) : ' · Bénéficiaire externe'}</span></div>`;
+  $('am-input').value = ''; $('am-note').value = ''; $('am-recap').innerHTML = '';
+  $('am-err').classList.remove('show'); $('am-btn').classList.add('disabled');
+  $('am-hint').textContent = me.isAdmin ? '⚡ Administrateur — solde illimité' : 'Solde disponible : ' + fmt(me.balance);
+  go('s-amount');
+}
+function onAmount() {
+  const v = parseInt(digits($('am-input').value) || '0', 10);
+  const fee = Math.round(v * (B.feeRate || 0) * 100) / 100;
+  flow.amount = v; flow.fee = fee;
+  $('am-recap').innerHTML = v ? `
+    <div><span>Montant</span><b>${esc(fmt(v))}</b></div>
+    <div><span>Frais</span><b>${fee === 0 ? 'Sans frais' : esc(fmt(fee))}</b></div>
+    <div><span>Total débité</span><b>${esc(fmt(v + fee))}</b></div>
+    ${me.isAdmin ? '<div><span>Mode</span><b>⚡ Illimité</b></div>' : `<div><span>Nouveau solde</span><b>${esc(fmt(me.balance - v - fee))}</b></div>`}` : '';
+  const insuf = !me.isAdmin && v > 0 && v + fee > me.balance;
+  $('am-err').classList.toggle('show', insuf);
+  $('am-btn').classList.toggle('disabled', !v || insuf);
+}
+function askPin() { pinBuf = ''; drawPinDots(); $('m-pin').classList.add('show'); }
+function closePin() { $('m-pin').classList.remove('show'); }
+function drawPinDots() { $('pin-dots').querySelectorAll('.pin-dot').forEach((d, i) => d.classList.toggle('on', i < pinBuf.length)); }
+function pinKey(k) {
+  if (pinBuf.length >= 4) return;
+  pinBuf += k; drawPinDots();
+  if (pinBuf.length === 4) setTimeout(() => {
+    if (pinBuf !== me.pin) { toast('Code secret incorrect ❌'); pinBuf = ''; drawPinDots(); return; }
+    closePin(); execute();
+  }, 180);
+}
+function pinDel() { pinBuf = pinBuf.slice(0, -1); drawPinDots(); }
 
-  function build() {
-    var appEl = document.createElement('div');
-    appEl.id = 'app';
-    appEl.innerHTML = [
-      screenAuth(), screenRegister(), screenLogin(), screenPin(),
-      screenHome(), screenAccounts(), screenCards(), screenNewCard(),
-      screenTransfer(), screenAmount(), screenMenu(), screenBenef(), screenHistory(), screenTxDetail(),
-      screenService(),
-      tabbar(), modals()
-    ].join('');
-    document.body.appendChild(appEl);
-    var t = document.createElement('div');
-    t.id = 'toast';
-    document.body.appendChild(t);
-  }
+function execute() {
+  reload();
+  const total = (flow.amount || 0) + (flow.fee || 0);
+  if (!me.isAdmin && total > me.balance) { toast('Solde insuffisant'); return; }
+  const r = ref(B.key.slice(0, 1).toUpperCase()), stamp = Date.now();
+  const note = flow.note || ($('am-note') && $('am-note').value.trim()) || '';
+  if (!me.isAdmin) me.balance -= total;
+  const title = flow.kind === 'service' ? `${flow.to.name}` : `Virement à ${flow.to.name}`;
+  me.txs.unshift({ icon: flow.kind === 'service' ? '🧾' : '⇄', title, person: flow.to.name, phone: flow.to.phone,
+    code: B.dial, amount: -total, date: nowLabel(), sortAt: stamp, balanceAfter: me.balance, ref: r, note });
+  persist(me);
 
-  function tabbar() {
-    return '<div class="tabbar hide" id="tabbar">' + TABS.map(function (t) {
-      return '<button class="tab" data-tab="' + t.id + '"><span class="ti">' + t.icon + '</span>' + t.label + '</button>';
-    }).join('') + '</div>';
-  }
-
-  /* ── Écran d'accueil non connecté ── */
-  function screenAuth() {
-    return '<div id="s-auth" class="screen auth">' + statusbar(true) +
-      '<div class="auth-top">' +
-        '<div class="auth-logo"><img src="' + CFG.logo + '" alt="' + esc(CFG.name) + '"/></div>' +
-        '<div class="auth-name">' + esc(CFG.name) + '</div>' +
-        '<div class="auth-slogan">' + esc(CFG.slogan) + '</div>' +
-      '</div>' +
-      '<div class="auth-foot">' +
-        '<button class="btn" id="go-register">Créer un compte</button>' +
-        '<button class="btn ghost" id="go-login">J\'ai déjà un compte</button>' +
-        '<p class="hint">' + esc(CFG.legal) + ' — Service de démonstration PayZone Afrique.<br/>' +
-        'Vos données restent sur cet appareil.</p>' +
-      '</div></div>';
-  }
-
-  /* ── Création de compte ── */
-  function screenRegister() {
-    return '<div id="s-register" class="screen">' +
-      '<div class="phead"><button class="back" data-go="s-auth">‹</button><h2>Ouvrir un compte</h2></div>' +
-      '<div class="pbody">' +
-        '<div class="row2">' +
-          '<div class="field-w"><label class="label">Prénom</label><input id="r-prenom" class="field" placeholder="Prénom" autocomplete="given-name"/></div>' +
-          '<div class="field-w"><label class="label">Nom</label><input id="r-nom" class="field" placeholder="Nom" autocomplete="family-name"/></div>' +
-        '</div>' +
-        '<div class="field-w"><label class="label">Numéro de téléphone</label>' +
-          '<div class="phone-w"><input class="cc" value="' + CFG.dial + '" readonly/>' +
-          '<input id="r-phone" class="field" type="tel" inputmode="numeric" placeholder="' + esc(CFG.phoneHint) + '" autocomplete="tel"/></div></div>' +
-        '<div class="field-w"><label class="label">Adresse e-mail</label><input id="r-email" class="field" type="email" placeholder="exemple@mail.com" autocomplete="email"/></div>' +
-        '<div class="field-w"><label class="label">Type de compte</label><select id="r-type" class="field">' +
-          CFG.accountTypes.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') +
-        '</select></div>' +
-        '<div class="field-w"><label class="label">Code secret (4 chiffres)</label><input id="r-pin" class="field pin-field" type="tel" inputmode="numeric" maxlength="4" placeholder="••••"/></div>' +
-        '<div class="field-w"><label class="label">Confirmez le code secret</label><input id="r-pin2" class="field pin-field" type="tel" inputmode="numeric" maxlength="4" placeholder="••••"/></div>' +
-        '<div class="err" id="r-err"></div>' +
-        '<button class="btn" id="r-submit">Ouvrir mon compte</button>' +
-        '<p class="note">À l\'ouverture, votre solde est de 0 ' + CFG.symbol +
-        '. Alimentez-le par un virement reçu depuis un autre compte de la plateforme.</p>' +
-      '</div></div>';
-  }
-
-  /* ── Connexion ── */
-  function screenLogin() {
-    return '<div id="s-login" class="screen">' +
-      '<div class="phead"><button class="back" data-go="s-auth">‹</button><h2>Connexion</h2></div>' +
-      '<div class="pbody">' +
-        '<div class="field-w"><label class="label">Numéro de téléphone</label>' +
-          '<div class="phone-w"><input class="cc" value="' + CFG.dial + '" readonly/>' +
-          '<input id="l-phone" class="field" type="tel" inputmode="numeric" placeholder="' + esc(CFG.phoneHint) + '"/></div></div>' +
-        '<div class="field-w"><label class="label">Code secret</label><input id="l-pin" class="field pin-field" type="tel" inputmode="numeric" maxlength="4" placeholder="••••"/></div>' +
-        '<div class="err" id="l-err"></div>' +
-        '<button class="btn" id="l-submit">Se connecter</button>' +
-        '<div id="l-list" style="margin-top:22px"></div>' +
-      '</div></div>';
-  }
-
-  /* ── Saisie PIN (validation d'opération) ── */
-  function screenPin() {
-    var keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
-    return '<div id="s-pin" class="screen" style="background:#fff">' +
-      '<div class="phead"><button class="back" id="pin-cancel">‹</button><h2 id="pin-title">Confirmation</h2></div>' +
-      '<div class="pbody" style="text-align:center">' +
-        '<p class="note" id="pin-sub" style="margin-bottom:6px"></p>' +
-        '<div class="pin-dots" id="pin-dots"><i></i><i></i><i></i><i></i></div>' +
-        '<div class="err" id="pin-err">Code secret incorrect</div>' +
-        '<div class="pinpad">' + keys.map(function (k) {
-          return k === '' ? '<button class="key blank"></button>'
-            : '<button class="key" data-k="' + k + '">' + k + '</button>';
-        }).join('') + '</div>' +
-      '</div></div>';
-  }
-
-  /* ── Accueil ── */
-  function screenHome() {
-    return '<div id="s-home" class="screen">' +
-      '<div class="home-top">' + statusbar(true) +
-        '<div class="home-bar">' +
-          '<div class="hb-left"><div class="avatar" id="h-av">?</div>' +
-            '<div><div class="hb-hello">Bonjour</div><div class="hb-name" id="h-name"></div></div></div>' +
-          '<div class="hb-icons"><button class="icobtn" data-go="s-history">🕘</button>' +
-          '<button class="icobtn" data-go="s-menu">🔔</button></div>' +
-        '</div>' +
-        '<div class="solde-label">Solde</div>' +
-        '<div class="bal-row"><span class="bal-amount" id="h-bal"></span>' +
-          '<button class="bal-eye" id="h-eye">👁</button></div>' +
-        '<div class="bal-sub" id="h-rib"></div>' +
-      '</div>' +
-      '<div class="quick"><div class="qgrid" id="h-quick"></div></div>' +
-      '<div class="sec-h"><h3>Dernières opérations</h3><button data-go="s-history">Voir tout</button></div>' +
-      '<div class="panel" id="h-ops"></div>' +
-      '<div class="sec-h"><h3>Mes cartes</h3><button data-go="s-cards">Gérer</button></div>' +
-      '<div class="panel pad" id="h-cards"></div>' +
-      '<div class="footer-legal">' + esc(CFG.legal) + ' · Application de démonstration<br/>PayZone Afrique © ' +
-        new Date().getFullYear() + '</div>' +
-      '</div>';
-  }
-
-  /* ── Comptes ── */
-  function screenAccounts() {
-    return '<div id="s-accounts" class="screen">' +
-      '<div class="phead"><h2>Mes comptes</h2></div>' +
-      '<div class="pbody" id="ac-body"></div></div>';
-  }
-
-  /* ── Cartes ── */
-  function screenCards() {
-    return '<div id="s-cards" class="screen">' +
-      '<div class="phead"><h2>Mes cartes</h2></div>' +
-      '<div class="pbody" id="cd-body"></div></div>';
-  }
-
-  function screenNewCard() {
-    return '<div id="s-newcard" class="screen">' +
-      '<div class="phead"><button class="back" data-go="s-cards">‹</button><h2>Nouvelle carte virtuelle</h2></div>' +
-      '<div class="pbody">' +
-        '<div class="field-w"><label class="label">Produit</label><select id="nc-kind" class="field">' +
-          CFG.cardProducts.map(function (p) { return '<option>' + esc(p) + '</option>'; }).join('') +
-        '</select></div>' +
-        '<div class="field-w"><label class="label">Réseau</label><select id="nc-net" class="field">' +
-          '<option>VISA</option><option>Mastercard</option></select></div>' +
-        '<div class="field-w"><label class="label">Plafond mensuel (' + CFG.symbol + ')</label>' +
-          '<input id="nc-limit" class="field" type="tel" inputmode="numeric" placeholder="5000"/></div>' +
-        '<div class="field-w"><label class="label">Validité</label><select id="nc-val" class="field">' +
-          '<option>1 an</option><option>2 ans</option><option>3 ans</option></select></div>' +
-        '<div class="err" id="nc-err"></div>' +
-        '<button class="btn" id="nc-submit">Créer la carte</button>' +
-        '<p class="note">La carte virtuelle est utilisable immédiatement pour vos paiements en ligne. ' +
-        'Elle est adossée à votre compte ' + esc(CFG.name) + '.</p>' +
-      '</div></div>';
-  }
-
-  /* ── Virement : choix du bénéficiaire ── */
-  function screenTransfer() {
-    return '<div id="s-transfer" class="screen">' +
-      '<div class="phead"><h2>Virement</h2></div>' +
-      '<div class="pbody">' +
-        '<input id="t-search" class="field" placeholder="🔍  Nom ou numéro de téléphone"/>' +
-        '<button class="btn ghost" style="margin-top:12px" data-go="s-benef">＋ Nouveau bénéficiaire</button>' +
-        '<div class="sec-h" style="padding:20px 0 6px"><h3>Comptes de la plateforme</h3></div>' +
-        '<div class="panel pad" style="margin:0" id="t-list"></div>' +
-      '</div></div>';
-  }
-
-  /* ── Nouveau bénéficiaire ── */
-  function screenBenef() {
-    return '<div id="s-benef" class="screen">' +
-      '<div class="phead"><button class="back" data-go="s-transfer">‹</button><h2>Nouveau bénéficiaire</h2></div>' +
-      '<div class="pbody">' +
-        '<div class="field-w"><label class="label">Établissement</label><select id="b-bank" class="field">' +
-          '<option value="attijari">Attijari Bank</option><option value="cih">CIH Bank</option>' +
-          '<option value="wafacash">Wafacash</option><option value="wave">Wave (Mobile Money)</option>' +
-        '</select></div>' +
-        '<div class="field-w"><label class="label">Numéro de téléphone du bénéficiaire</label>' +
-          '<input id="b-phone" class="field" type="tel" inputmode="numeric" placeholder="Numéro"/></div>' +
-        '<div class="err" id="b-err"></div>' +
-        '<button class="btn" id="b-submit">Rechercher le compte</button>' +
-        '<p class="note">Le bénéficiaire doit posséder un compte actif sur PayZone Afrique ' +
-        '(Attijari, CIH, Wafacash ou Wave).</p>' +
-      '</div></div>';
-  }
-
-  /* ── Montant ── */
-  function screenAmount() {
-    return '<div id="s-amount" class="screen">' +
-      '<div class="phead"><button class="back" data-go="s-transfer">‹</button><h2 id="am-title">Montant</h2></div>' +
-      '<div class="pbody">' +
-        '<div class="panel pad" style="margin:0 0 16px" id="am-card"></div>' +
-        '<div class="field-w"><label class="label">Montant à envoyer (' + CFG.symbol + ')</label>' +
-          '<input id="am-input" class="field" type="tel" inputmode="decimal" placeholder="0,00"/></div>' +
-        '<div class="field-w"><label class="label">Motif</label>' +
-          '<input id="am-note" class="field" placeholder="Ex : loyer, remboursement…"/></div>' +
-        '<div class="recap" id="am-recap"></div>' +
-        '<div class="err" id="am-err"></div>' +
-        '<button class="btn" id="am-submit">Continuer</button>' +
-      '</div></div>';
-  }
-
-  /* ── Historique ── */
-  function screenHistory() {
-    return '<div id="s-history" class="screen">' +
-      '<div class="phead"><button class="back" id="hi-back">‹</button><h2>Historique</h2></div>' +
-      '<div class="pbody"><div class="panel" style="margin:0" id="hi-list"></div></div></div>';
-  }
-
-  function screenTxDetail() {
-    return '<div id="s-tx" class="screen">' +
-      '<div class="phead"><button class="back" data-go="s-history">‹</button><h2>Détail de l\'opération</h2></div>' +
-      '<div class="pbody" id="tx-body"></div></div>';
-  }
-
-  /* ── Menu ── */
-  function screenMenu() {
-    return '<div id="s-menu" class="screen">' +
-      '<div class="phead"><h2>Menu</h2></div>' +
-      '<div class="pbody" id="mn-body"></div></div>';
-  }
-
-  /* ── Service générique (factures, recharge, etc.) ── */
-  function screenService() {
-    return '<div id="s-service" class="screen">' +
-      '<div class="phead"><button class="back" id="sv-back">‹</button><h2 id="sv-title"></h2></div>' +
-      '<div class="pbody">' +
-        '<div class="field-w"><label class="label" id="sv-l1">Référence</label><input id="sv-f1" class="field"/></div>' +
-        '<div class="field-w"><label class="label">Montant (' + CFG.symbol + ')</label>' +
-          '<input id="sv-amt" class="field" type="tel" inputmode="decimal" placeholder="0,00"/></div>' +
-        '<div class="recap" id="sv-recap"></div>' +
-        '<div class="err" id="sv-err"></div>' +
-        '<button class="btn" id="sv-submit">Valider</button>' +
-      '</div></div>';
-  }
-
-  function modals() {
-    return '<div class="modal" id="m-success"><div class="sheet"><div class="grabber"></div>' +
-        '<div class="success"><div class="tick">✓</div><h3 id="sc-title"></h3>' +
-        '<div class="amt" id="sc-amt"></div><div class="sub" id="sc-to"></div>' +
-        '<div class="recap" id="sc-recap"></div>' +
-        '<button class="btn" id="sc-ok">Terminé</button></div></div></div>' +
-      '<div class="modal" id="m-card"><div class="sheet"><div class="grabber"></div>' +
-        '<h3>Détails de la carte</h3><div class="sub">Ne communiquez jamais ces informations.</div>' +
-        '<div id="mc-body"></div><button class="btn" id="mc-close" style="margin-top:14px">Fermer</button>' +
-        '</div></div>';
-  }
-
-  /* ═══════════════════════════════════════════
-     RENDUS
-     ═══════════════════════════════════════════ */
-
-  function refreshAll() {
-    renderHome();
-    renderAccounts();
-    renderCards();
-    renderDirectory('');
-    renderHistory();
-    renderMenu();
-  }
-
-  function renderHome() {
-    if (!me) return;
-    $('h-av').textContent = initials(me);
-    $('h-name').textContent = fullName(me);
-    $('h-bal').innerHTML = balHTML(balVisible ? me.balance : null);
-    $('h-eye').textContent = balVisible ? '🙈' : '👁';
-    $('h-rib').textContent = me.type + ' · ' + me.rib;
-
-    $('h-quick').innerHTML = CFG.quick.map(function (q, i) {
-      return '<button class="qtile" data-q="' + i + '"><span class="c">' + q.icon + '</span><span>' +
-        esc(q.label) + '</span></button>';
-    }).join('');
-    Array.prototype.forEach.call($('h-quick').children, function (b) {
-      b.onclick = function () { runQuick(CFG.quick[+b.getAttribute('data-q')]); };
-    });
-
-    var ops = me.txs.slice(0, 5);
-    $('h-ops').innerHTML = ops.length ? ops.map(opRow).join('') : emptyBox('🧾', 'Aucune opération pour le moment.');
-    bindOps($('h-ops'));
-
-    var c = me.cards[0];
-    $('h-cards').innerHTML = c ? cardHTML(c) :
-      '<div class="empty" style="padding:18px 6px"><div class="big">💳</div>' +
-      '<p>Vous n\'avez pas encore de carte.</p>' +
-      '<button class="btn ghost" style="margin-top:14px" id="h-newcard">Créer une carte virtuelle</button></div>';
-    if ($('h-newcard')) $('h-newcard').onclick = function () { go('s-newcard'); };
-  }
-
-  function emptyBox(icon, text) {
-    return '<div class="empty"><div class="big">' + icon + '</div><p>' + esc(text) + '</p></div>';
-  }
-
-  function opRow(t, i) {
-    var out = t.amount < 0;
-    return '<div class="op" data-tx="' + esc(t.ref) + '">' +
-      '<div class="ic ' + (out ? 'out' : 'in') + '">' + t.icon + '</div>' +
-      '<div class="mid"><div class="lb">' + esc(t.title) + '</div>' +
-      '<div class="dt">' + esc(t.date) + '</div></div>' +
-      '<div class="amt ' + (out ? 'out' : 'in') + '">' + (out ? '' : '+') + fmt(t.amount) + '</div></div>';
-  }
-  function bindOps(root) {
-    root.querySelectorAll('.op').forEach(function (el) {
-      el.onclick = function () { showTx(el.getAttribute('data-tx')); };
-    });
-  }
-
-  function renderAccounts() {
-    if (!me) return;
-    $('ac-body').innerHTML =
-      '<div class="acct">' +
-        '<svg class="rings" viewBox="0 0 200 140"><g fill="none" stroke="#fff" stroke-width="2" opacity=".55">' +
-        '<circle cx="120" cy="70" r="42"/><circle cx="142" cy="70" r="42"/><circle cx="164" cy="70" r="42"/></g></svg>' +
-        '<div class="t">' + esc(CFG.name) + '</div>' +
-        '<div class="n">' + esc(me.type) + '</div>' +
-        '<div class="rib">' + esc(me.rib) + '</div>' +
-        '<div class="b">' + nf(me.balance) + '<span class="u">' + CFG.symbol + '</span></div>' +
-      '</div>' +
-      '<div class="panel pad" style="margin:0 0 16px">' +
-        kv('Titulaire', fullName(me)) +
-        kv('Téléphone', CFG.dial + ' ' + me.phone) +
-        kv('E-mail', me.email) +
-        kv('RIB / IBAN', me.iban) +
-        kv('Devise', CFG.currency + ' (' + CFG.symbol + ')') +
-        kv('Ouvert le', me.since) +
-        kv('Statut', 'Actif') +
-      '</div>' +
-      '<button class="btn ghost" id="ac-copy">Copier mon RIB</button>' +
-      '<button class="btn" id="ac-send">Faire un virement</button>';
-    $('ac-copy').onclick = function () {
-      if (navigator.clipboard) navigator.clipboard.writeText(me.iban);
-      toast('RIB copié 📋');
-    };
-    $('ac-send').onclick = function () { go('s-transfer'); };
-  }
-  function kv(k, v) { return '<div class="kv"><span>' + esc(k) + '</span><b>' + esc(v) + '</b></div>'; }
-
-  function cardHTML(c) {
-    return '<div class="vcard' + (c.blocked ? ' blocked' : '') + '" data-card="' + esc(c.id) + '">' +
-      '<div class="vc-top"><div class="brand">' + esc(CFG.name) + '</div>' +
-        '<div class="kind">' + esc(c.kind) + (c.blocked ? ' · BLOQUÉE' : '') + '</div></div>' +
-      '<div class="chip"></div>' +
-      '<div class="num">' + esc(c.masked) + '</div>' +
-      '<div class="vc-bot"><div><div class="lbl">Titulaire</div><b>' + esc(c.holder) + '</b></div>' +
-      '<div><div class="lbl">Expire</div><b>' + esc(c.exp) + '</b></div>' +
-      '<div class="net">' + esc(c.net) + '</div></div></div>';
-  }
-
-  function renderCards() {
-    if (!me) return;
-    var body = $('cd-body');
-    if (!me.cards.length) {
-      body.innerHTML = emptyBox('💳', 'Aucune carte virtuelle. Créez-en une en quelques secondes.') +
-        '<button class="btn" id="cd-new">Créer une carte virtuelle</button>';
-    } else {
-      body.innerHTML = me.cards.map(function (c) {
-        return cardHTML(c) +
-          '<div class="card-actions">' +
-            '<button class="btn ghost" data-show="' + esc(c.id) + '">Voir le numéro</button>' +
-            '<button class="btn ' + (c.blocked ? '' : 'dark') + '" data-block="' + esc(c.id) + '">' +
-              (c.blocked ? 'Débloquer' : 'Bloquer') + '</button>' +
-          '</div>' +
-          '<div class="panel pad" style="margin:0 0 22px">' +
-            kv('Produit', c.kind) + kv('Plafond mensuel', fmt(c.limit)) +
-            kv('Créée le', c.created) + kv('Statut', c.blocked ? 'Bloquée' : 'Active') +
-          '</div>';
-      }).join('') + '<button class="btn" id="cd-new">＋ Nouvelle carte virtuelle</button>';
-    }
-    if ($('cd-new')) $('cd-new').onclick = function () { go('s-newcard'); };
-    body.querySelectorAll('[data-show]').forEach(function (b) {
-      b.onclick = function () { showCard(b.getAttribute('data-show')); };
-    });
-    body.querySelectorAll('[data-block]').forEach(function (b) {
-      b.onclick = function () {
-        var c = me.cards.filter(function (x) { return x.id === b.getAttribute('data-block'); })[0];
-        if (!c) return;
-        c.blocked = !c.blocked;
-        persist();
-        renderCards(); renderHome();
-        toast(c.blocked ? 'Carte bloquée' : 'Carte débloquée');
-      };
-    });
-  }
-
-  function showCard(id) {
-    var c = me.cards.filter(function (x) { return x.id === id; })[0];
-    if (!c) return;
-    $('mc-body').innerHTML = '<div class="panel pad" style="margin:12px 0 0;box-shadow:none;border:1px solid var(--line)">' +
-      kv('Numéro', c.number) + kv('Titulaire', c.holder) +
-      kv('Expiration', c.exp) + kv('Cryptogramme (CVV)', c.cvv) +
-      kv('Réseau', c.net) + '</div>';
-    openModal('m-card');
-  }
-
-  function renderDirectory(q) {
-    var list = directory();
-    q = (q || '').trim().toLowerCase();
-    if (q) {
-      list = list.filter(function (d) {
-        return d.name.toLowerCase().indexOf(q) >= 0 || d.phone.indexOf(digits(q)) >= 0;
-      });
-    }
-    var el = $('t-list');
-    if (!list.length) {
-      el.innerHTML = emptyBox('👥', 'Aucun autre compte trouvé. Créez un compte sur une autre banque ou sur Wave pour tester un virement.');
-      return;
-    }
-    el.innerHTML = list.map(function (d, i) {
-      return '<button class="pick" data-d="' + i + '">' +
-        '<span class="av"><img src="' + d.logo + '" alt=""/></span>' +
-        '<span class="mid"><span class="n">' + esc(d.name || 'Compte ' + d.phone) + '</span>' +
-        '<span class="s">' + esc(d.bankLabel) + ' · ' + esc(d.phone) + '</span></span>' +
-        '<span class="badge">' + (d.currency === 'XOF' ? 'F CFA' : 'DH') + '</span></button>';
-    }).join('');
-    el.querySelectorAll('.pick').forEach(function (b) {
-      b.onclick = function () { startTransfer(list[+b.getAttribute('data-d')]); };
-    });
-  }
-
-  function renderHistory() {
-    if (!me) return;
-    $('hi-list').innerHTML = me.txs.length
-      ? me.txs.map(opRow).join('')
-      : emptyBox('🧾', 'Aucune opération enregistrée.');
-    bindOps($('hi-list'));
-  }
-
-  function showTx(r) {
-    var t = me.txs.filter(function (x) { return x.ref === r; })[0];
-    if (!t) return;
-    $('tx-body').innerHTML =
-      '<div class="success" style="padding-bottom:10px"><div class="tick" style="background:var(--soft);color:var(--primary)">' +
-        t.icon + '</div><h3>' + esc(t.title) + '</h3>' +
-        '<div class="amt" style="color:' + (t.amount < 0 ? 'var(--ink)' : 'var(--green)') + '">' +
-        (t.amount < 0 ? '' : '+') + fmt(t.amount) + '</div></div>' +
-      '<div class="panel pad" style="margin:8px 0 0">' +
-        kv('Date', t.date) + kv('Bénéficiaire / Émetteur', t.person || '—') +
-        kv('Établissement', t.bankLabel || CFG.name) +
-        kv('Motif', t.note || '—') + kv('Référence', t.ref) +
-        kv('Solde après opération', fmt(t.balanceAfter)) +
-      '</div>';
-    go('s-tx');
-  }
-
-  function renderMenu() {
-    if (!me) return;
-    $('mn-body').innerHTML =
-      '<div class="panel pad" style="margin:0 0 16px;display:flex;align-items:center;gap:14px">' +
-        '<div class="avatar" style="background:var(--soft);color:var(--primary);border:0;width:54px;height:54px;font-size:19px">' +
-          initials(me) + '</div>' +
-        '<div><div style="font-weight:800;font-size:16px">' + esc(fullName(me)) + '</div>' +
-        '<div style="font-size:12.5px;color:var(--grey);margin-top:3px">' + CFG.dial + ' ' + esc(me.phone) + '</div></div>' +
-      '</div>' +
-      '<div class="panel pad" style="margin:0 0 16px">' +
-        CFG.menu.map(function (m, i) {
-          return '<button class="pick" data-m="' + i + '"><span class="av">' + m.icon + '</span>' +
-            '<span class="mid"><span class="n">' + esc(m.label) + '</span>' +
-            '<span class="s">' + esc(m.sub) + '</span></span><span class="chev">›</span></button>';
-        }).join('') +
-      '</div>' +
-      '<button class="btn danger" id="mn-logout">Se déconnecter</button>';
-    $('mn-body').querySelectorAll('[data-m]').forEach(function (b) {
-      b.onclick = function () { runQuick(CFG.menu[+b.getAttribute('data-m')]); };
-    });
-    $('mn-logout').onclick = function () {
-      DB.clearSession(); me = null; balVisible = false; go('s-auth');
-    };
-  }
-
-  /* ═══════════════════════════════════════════
-     ACTIONS
-     ═══════════════════════════════════════════ */
-
-  function runQuick(q) {
-    if (!q) return;
-    if (q.action === 'transfer') return go('s-transfer');
-    if (q.action === 'cards')    return go('s-cards');
-    if (q.action === 'newcard')  return go('s-newcard');
-    if (q.action === 'accounts') return go('s-accounts');
-    if (q.action === 'history')  return go('s-history');
-    if (q.action === 'rib') {
-      if (navigator.clipboard) navigator.clipboard.writeText(me.iban);
-      return toast('RIB copié : ' + me.iban, 3200);
-    }
-    if (q.action === 'service') return openService(q);
-    toast(q.label + ' — bientôt disponible');
-  }
-
-  var svc = null;
-  function openService(q) {
-    svc = q;
-    $('sv-title').textContent = q.label;
-    $('sv-l1').textContent = q.field || 'Référence';
-    $('sv-f1').value = '';
-    $('sv-f1').placeholder = q.placeholder || '';
-    $('sv-amt').value = '';
-    $('sv-recap').innerHTML = '';
-    $('sv-err').classList.remove('show');
-    go('s-service');
-  }
-
-  /* ── Création de compte ── */
-  function doRegister() {
-    var prenom = $('r-prenom').value.trim();
-    var nom    = $('r-nom').value.trim();
-    var phone  = digits($('r-phone').value);
-    var email  = $('r-email').value.trim();
-    var pin    = digits($('r-pin').value);
-    var pin2   = digits($('r-pin2').value);
-    var err    = $('r-err');
-
-    function fail(m) { err.textContent = m; err.classList.add('show'); }
-    err.classList.remove('show');
-
-    if (prenom.length < 2 || nom.length < 2) return fail('Renseignez votre prénom et votre nom.');
-    if (phone.length < CFG.phoneLen) return fail('Numéro de téléphone invalide (' + CFG.phoneLen + ' chiffres).');
-    if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) return fail('Adresse e-mail invalide.');
-    if (pin.length !== 4) return fail('Le code secret doit contenir 4 chiffres.');
-    if (pin !== pin2) return fail('Les deux codes secrets ne correspondent pas.');
-    if (DB.find(CFG.key, phone)) return fail('Un compte existe déjà avec ce numéro.');
-
-    var d = new Date();
-    var suffix = String(Math.floor(Math.random() * 1e10)).padStart(10, '0');
-    var acc = {
-      bank: CFG.key, prenom: prenom, nom: nom, phone: phone, email: email,
-      pin: pin, type: $('r-type').value, currency: CFG.currency,
-      balance: 0,
-      rib: CFG.ribPrefix + ' •••• ' + suffix.slice(-4),
-      iban: CFG.ibanPrefix + suffix.slice(0, 3) + ' ' + suffix.slice(3, 7) + ' ' + suffix.slice(7) + phone.slice(-4),
-      since: d.toLocaleDateString('fr-FR'),
-      cards: [], txs: []
-    };
-    DB.put(acc);
-    DB.setSession(phone);
-    me = acc;
-    balVisible = true;
-    refreshAll();
-    go('s-home');
-    toast('Compte ouvert — solde 0 ' + CFG.symbol, 3200);
-  }
-
-  /* ── Connexion ── */
-  function doLogin() {
-    var phone = digits($('l-phone').value);
-    var pin = digits($('l-pin').value);
-    var err = $('l-err');
-    err.classList.remove('show');
-    var acc = DB.find(CFG.key, phone);
-    if (!acc) { err.textContent = 'Aucun compte ' + CFG.name + ' avec ce numéro.'; err.classList.add('show'); return; }
-    if (acc.pin !== pin) { err.textContent = 'Code secret incorrect.'; err.classList.add('show'); return; }
-    DB.setSession(phone);
-    me = acc;
-    refreshAll();
-    go('s-home');
-    toast('Bienvenue ' + acc.prenom);
-  }
-
-  function renderLoginList() {
-    var mine = DB.all().filter(function (a) { return a.bank === CFG.key; });
-    $('l-list').innerHTML = mine.length
-      ? '<div class="label">Comptes enregistrés sur cet appareil</div>' +
-        '<div class="panel pad" style="margin:0">' + mine.map(function (a, i) {
-          return '<button class="pick" data-a="' + i + '"><span class="av">' + initials(a) + '</span>' +
-            '<span class="mid"><span class="n">' + esc(fullName(a)) + '</span>' +
-            '<span class="s">' + CFG.dial + ' ' + esc(a.phone) + '</span></span><span class="chev">›</span></button>';
-        }).join('') + '</div>'
-      : '';
-    $('l-list').querySelectorAll('[data-a]').forEach(function (b) {
-      b.onclick = function () {
-        $('l-phone').value = mine[+b.getAttribute('data-a')].phone;
-        $('l-pin').focus();
-      };
-    });
-  }
-
-  /* ── Carte virtuelle ── */
-  function doNewCard() {
-    var err = $('nc-err');
-    err.classList.remove('show');
-    var limit = parseFloat(String($('nc-limit').value).replace(',', '.')) || 0;
-    if (limit <= 0) { err.textContent = 'Indiquez un plafond mensuel.'; err.classList.add('show'); return; }
-    var net = $('nc-net').value;
-    var prefix = net === 'VISA' ? '4' : '5';
-    var num = prefix;
-    while (num.length < 16) num += Math.floor(Math.random() * 10);
-    var groups = num.match(/.{1,4}/g);
-    var d = new Date();
-    var years = parseInt($('nc-val').value, 10) || 1;
-    pendingCard = {
-      id: 'c' + Date.now(),
-      kind: $('nc-kind').value,
-      net: net,
-      number: groups.join(' '),
-      masked: '•••• •••• •••• ' + groups[3],
-      cvv: String(Math.floor(100 + Math.random() * 900)),
-      exp: String(d.getMonth() + 1).padStart(2, '0') + '/' + String((d.getFullYear() + years) % 100).padStart(2, '0'),
-      holder: fullName(me).toUpperCase(),
-      limit: limit,
-      blocked: false,
-      created: d.toLocaleDateString('fr-FR')
-    };
-    askPin('Création de carte', 'Saisissez votre code secret pour émettre la carte.', function () {
-      me.cards.unshift(pendingCard);
-      me.txs.unshift({
-        icon: '💳', title: 'Émission carte ' + pendingCard.kind, person: fullName(me),
-        bankLabel: CFG.name, amount: 0, date: nowLabel(), balanceAfter: me.balance,
-        ref: ref('C'), note: 'Carte ' + pendingCard.masked
-      });
-      persist();
-      refreshAll();
-      go('s-cards');
-      success('Carte créée', '', pendingCard.kind + ' · ' + pendingCard.masked, [
-        ['Réseau', pendingCard.net],
-        ['Expiration', pendingCard.exp],
-        ['Plafond', fmt(pendingCard.limit)]
-      ]);
-      pendingCard = null;
-    });
-  }
-
-  /* ── Virement ── */
-  function startTransfer(dest) {
-    flow = { dest: dest };
-    $('am-title').textContent = 'Virement';
-    $('am-card').innerHTML =
-      '<div style="display:flex;align-items:center;gap:13px">' +
-        '<span class="av" style="width:46px;height:46px;border-radius:50%;overflow:hidden;display:flex">' +
-        '<img src="' + dest.logo + '" alt="" style="width:100%;height:100%;object-fit:cover"/></span>' +
-        '<div><div style="font-weight:800;font-size:15px">' + esc(dest.name || dest.phone) + '</div>' +
-        '<div style="font-size:12.5px;color:var(--grey);margin-top:3px">' + esc(dest.bankLabel) + ' · ' +
-        esc(dest.phone) + '</div></div></div>';
-    $('am-input').value = '';
-    $('am-note').value = '';
-    $('am-err').classList.remove('show');
-    updateRecap();
-    go('s-amount');
-  }
-
-  function transferFee(v) {
-    return Math.round(v * CFG.feeRate * 100) / 100;
-  }
-
-  function updateRecap() {
-    if (!flow) return;
-    var v = parseFloat(String($('am-input').value).replace(/\s/g, '').replace(',', '.')) || 0;
-    var fee = transferFee(v);
-    var rows = [['Montant', fmt(v)], ['Frais', fmt(fee)], ['Total débité', fmt(v + fee)]];
-    if (flow.dest.currency !== CFG.currency) {
-      rows.push(['Montant reçu', fmtCur(convert(v, CFG.currency, flow.dest.currency), flow.dest.currency)]);
-    }
-    rows.push(['Nouveau solde', fmt(me.balance - v - fee)]);
-    $('am-recap').innerHTML = rows.map(function (r) {
-      return '<div><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>';
-    }).join('');
-  }
-
-  function doTransfer() {
-    var err = $('am-err');
-    err.classList.remove('show');
-    var v = parseFloat(String($('am-input').value).replace(/\s/g, '').replace(',', '.')) || 0;
-    if (v <= 0) { err.textContent = 'Saisissez un montant.'; err.classList.add('show'); return; }
-    var fee = transferFee(v);
-    if (v + fee > me.balance) {
-      err.textContent = 'Solde insuffisant. Disponible : ' + fmt(me.balance);
-      err.classList.add('show');
-      return;
-    }
-    var note = $('am-note').value.trim();
-    askPin('Confirmation du virement', 'Virement de ' + fmt(v) + ' vers ' + (flow.dest.name || flow.dest.phone), function () {
-      var r = ref('V');
-      me.balance = Math.round((me.balance - v - fee) * 100) / 100;
-      me.txs.unshift({
-        icon: '⇄', title: 'Virement à ' + (flow.dest.name || flow.dest.phone),
-        person: flow.dest.name, bankLabel: flow.dest.bankLabel,
-        amount: -(v + fee), date: nowLabel(), balanceAfter: me.balance, ref: r, note: note
-      });
-      persist();
-
-      // crédit du bénéficiaire
-      var received = convert(v, CFG.currency, flow.dest.currency);
-      if (flow.dest.bank === 'wave') {
-        WaveDB.credit(flow.dest.phone, received, fullName(me) + ' (' + CFG.name + ')', note);
+  let destLabel = 'Bénéficiaire externe';
+  if (flow.kind === 'transfer') {
+    const e = findAnywhere(flow.to.phone);
+    if (e) {
+      destLabel = e.app.label;
+      if (e.app.key === B.key) {
+        const d = find(e.acc.phone);
+        d.balance = (Number(d.balance) || 0) + flow.amount;
+        d.txs = d.txs || [];
+        d.txs.unshift({ icon: '⬆️', title: `Virement reçu de ${fullName(me)}`, person: fullName(me), phone: me.phone,
+          code: B.dial, amount: flow.amount, date: nowLabel(), sortAt: stamp, balanceAfter: d.balance, ref: r, note });
+        persist(d);
       } else {
-        var d = DB.find(flow.dest.bank, flow.dest.phone);
-        if (d) {
-          d.balance = Math.round((d.balance + received) * 100) / 100;
-          d.txs.unshift({
-            icon: '⬇', title: 'Virement reçu de ' + fullName(me), person: fullName(me),
-            bankLabel: CFG.name, amount: received, date: nowLabel(),
-            balanceAfter: d.balance, ref: r, note: note
-          });
-          DB.put(d);
-        }
+        creditExternal(e, flow.amount, fullName(me) + ' (' + B.name + ')', note, stamp);
       }
-
-      refreshAll();
-      go('s-home');
-      success('Virement effectué', fmt(v), 'vers ' + (flow.dest.name || flow.dest.phone), [
-        ['Établissement', flow.dest.bankLabel],
-        ['Frais', fmt(fee)],
-        ['Montant reçu', fmtCur(received, flow.dest.currency)],
-        ['Référence', r],
-        ['Nouveau solde', fmt(me.balance)]
-      ]);
-      flow = null;
-    });
-  }
-
-  /* ── Service (facture, recharge…) ── */
-  function doService() {
-    var err = $('sv-err');
-    err.classList.remove('show');
-    var v = parseFloat(String($('sv-amt').value).replace(/\s/g, '').replace(',', '.')) || 0;
-    var f1 = $('sv-f1').value.trim();
-    if (!f1) { err.textContent = 'Champ « ' + (svc.field || 'Référence') + ' » requis.'; err.classList.add('show'); return; }
-    if (v <= 0) { err.textContent = 'Saisissez un montant.'; err.classList.add('show'); return; }
-    if (v > me.balance) { err.textContent = 'Solde insuffisant. Disponible : ' + fmt(me.balance); err.classList.add('show'); return; }
-    askPin(svc.label, 'Montant : ' + fmt(v), function () {
-      var r = ref('P');
-      me.balance = Math.round((me.balance - v) * 100) / 100;
-      me.txs.unshift({
-        icon: svc.icon, title: svc.label + ' · ' + f1, person: f1, bankLabel: CFG.name,
-        amount: -v, date: nowLabel(), balanceAfter: me.balance, ref: r, note: svc.field + ' : ' + f1
-      });
-      persist();
-      refreshAll();
-      go('s-home');
-      success(svc.label, fmt(v), f1, [['Référence', r], ['Nouveau solde', fmt(me.balance)]]);
-    });
-  }
-
-  /* ── Bénéficiaire manuel ── */
-  function findBenef() {
-    var err = $('b-err');
-    err.classList.remove('show');
-    var bank = $('b-bank').value;
-    var phone = digits($('b-phone').value);
-    if (!phone) { err.textContent = 'Saisissez un numéro.'; err.classList.add('show'); return; }
-    if (bank === CFG.key && phone === me.phone) {
-      err.textContent = 'Vous ne pouvez pas vous virer de l\'argent à vous-même.';
-      err.classList.add('show'); return;
-    }
-    var d = null;
-    if (bank === 'wave') {
-      var w = WaveDB.find(phone);
-      if (w) d = { bank: 'wave', bankLabel: 'Wave', name: ((w.prenom || '') + ' ' + (w.nom || '')).trim(), phone: digits(w.phone), currency: 'XOF', logo: 'wave.png' };
-    } else {
-      var a = DB.find(bank, phone);
-      if (a) d = { bank: bank, bankLabel: BANK_LABELS[bank], name: fullName(a), phone: a.phone, currency: a.currency, logo: bank + '.png' };
-    }
-    if (!d) {
-      err.textContent = 'Aucun compte ' + BANK_LABELS[bank] + ' trouvé avec ce numéro.';
-      err.classList.add('show'); return;
-    }
-    startTransfer(d);
-  }
-
-  /* ── PIN ── */
-  function askPin(title, sub, cb) {
-    pinBuf = '';
-    pinTarget = cb;
-    $('pin-title').textContent = title;
-    $('pin-sub').textContent = sub || '';
-    $('pin-err').classList.remove('show');
-    drawPin();
-    go('s-pin');
-  }
-  function drawPin() {
-    var dots = $('pin-dots').children;
-    for (var i = 0; i < 4; i++) dots[i].classList.toggle('on', i < pinBuf.length);
-  }
-  function pinKey(k) {
-    if (k === '⌫') { pinBuf = pinBuf.slice(0, -1); drawPin(); return; }
-    if (pinBuf.length >= 4) return;
-    pinBuf += k;
-    drawPin();
-    if (pinBuf.length === 4) {
-      setTimeout(function () {
-        if (pinBuf === me.pin) {
-          var cb = pinTarget;
-          pinTarget = null;
-          pinBuf = '';
-          drawPin();
-          if (cb) cb();
-        } else {
-          $('pin-err').classList.add('show');
-          pinBuf = '';
-          drawPin();
-        }
-      }, 130);
     }
   }
+  reload();
+  $('sc-title').textContent = flow.kind === 'service' ? 'Paiement effectué' : 'Virement exécuté';
+  $('sc-amount').textContent = fmt(flow.amount);
+  $('sc-to').textContent = '→ ' + flow.to.name;
+  $('sc-recap').innerHTML = `
+    <div><span>Frais</span><b>${flow.fee ? esc(fmt(flow.fee)) : 'Sans frais'}</b></div>
+    <div><span>Destination</span><b>${esc(destLabel)}</b></div>
+    ${flow.to.phone ? `<div><span>${flow.kind === 'service' ? 'Référence' : 'Numéro'}</span><b>${esc(flow.to.phone)}</b></div>` : ''}
+    ${note ? `<div><span>Motif</span><b>${esc(note)}</b></div>` : ''}
+    ${me.isAdmin ? '' : `<div><span>Nouveau solde</span><b>${esc(fmt(me.balance))}</b></div>`}
+    <div><span>Référence</span><b>${esc(r)}</b></div>
+    <div><span>Date</span><b>${esc(nowLabel())}</b></div>`;
+  $('m-success').classList.add('show');
+}
+function closeSuccess() { $('m-success').classList.remove('show'); home(); }
 
-  function success(title, amt, to, rows) {
-    $('sc-title').textContent = title;
-    $('sc-amt').textContent = amt || '';
-    $('sc-to').textContent = to || '';
-    $('sc-recap').innerHTML = (rows || []).map(function (r) {
-      return '<div><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>';
-    }).join('');
-    openModal('m-success');
+/* ══════════ HISTORIQUE ══════════ */
+function history_() {
+  reload();
+  const txs = me.txs || [];
+  const credit = txs.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const debit  = txs.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  $('hist-body').innerHTML = `
+    <div class="recap" style="margin-bottom:14px">
+      <div><span>Total crédité</span><b style="color:var(--pos)">${esc(fmt(credit))}</b></div>
+      <div><span>Total débité</span><b style="color:var(--neg)">${esc(fmt(debit))}</b></div>
+      <div><span>Opérations</span><b>${txs.length}</b></div>
+    </div>
+    <div class="panel">${txs.length ? txs.map((t, i) => txRow(t, i)).join('') : '<div class="empty">Aucune opération</div>'}</div>`;
+  go('s-history');
+}
+function openTx(i) {
+  const t = me.txs[i];
+  $('tx-body').innerHTML = `
+    <div style="text-align:center;padding:18px 0 22px">
+      <div style="font-size:44px">${t.icon || '•'}</div>
+      <div style="font-size:32px;font-weight:800;color:var(--pri);margin-top:8px">${esc(fmt(t.amount))}</div>
+      <div style="color:var(--grey);font-size:13px;margin-top:4px">${esc(t.date)}</div>
+    </div>
+    <div class="recap">
+      <div><span>Libellé</span><b>${esc(t.title)}</b></div>
+      <div><span>${t.amount < 0 ? 'Bénéficiaire' : 'Émetteur'}</span><b>${esc(t.person || '—')}</b></div>
+      ${t.phone ? `<div><span>Référence tiers</span><b>${esc(t.phone)}</b></div>` : ''}
+      ${t.note ? `<div><span>Motif</span><b>${esc(t.note)}</b></div>` : ''}
+      <div><span>Solde après</span><b>${esc(fmt(t.balanceAfter))}</b></div>
+      <div><span>Référence</span><b>${esc(t.ref)}</b></div>
+    </div>`;
+  go('s-tx');
+}
+
+/* ══════════ MENU / PROFIL ══════════ */
+function menu() {
+  const items = B.menu.concat(me && me.isAdmin ? [{ icon: '⚡', label: 'Espace administrateur', sub: 'Gestion des comptes clients', action: 'admin' }] : []);
+  menuRef = items;
+  $('menu-body').innerHTML = items.map((m, i) => `
+    <div class="row" onclick="BankApp.menuAction(${i})">
+      <div class="ic">${m.icon}</div><div class="mid"><b>${esc(m.label)}</b><span>${esc(m.sub || '')}</span></div><div class="arrow">›</div></div>`).join('');
+  go('s-menu');
+}
+let menuRef = [];
+function menuAction(i) { runAction(menuRef[i]); }
+function profile() {
+  reload();
+  $('pr-body').innerHTML = `
+    <div class="recap">
+      <div><span>Titulaire</span><b>${esc(fullName(me))}</b></div>
+      <div><span>Civilité</span><b>${me.sexe === 'M' ? 'Monsieur' : me.sexe === 'F' ? 'Madame' : '—'}</b></div>
+      <div><span>Email</span><b>${esc(me.email || '—')}</b></div>
+      <div><span>Pièce d'identité</span><b>${esc(me.cin || '—')}</b></div>
+      <div><span>Téléphone</span><b>${B.dial} ${esc(me.phone)}</b></div>
+      <div><span>Type de compte</span><b>${esc(me.isAdmin ? 'Administrateur' : accountsOf(me)[0].label)}</b></div>
+      <div><span>Solde</span><b>${esc(fmt(me.balance))}</b></div>
+      <div><span>Cartes</span><b>${(me.cards || []).length}</b></div>
+      <div><span>Opérations</span><b>${(me.txs || []).length}</b></div>
+      <div><span>Client depuis</span><b>${new Date(me.createdAt).toLocaleDateString('fr-FR')}</b></div>
+    </div>
+    <button class="btn ghost" onclick="BankApp.changePin()">🔑 Modifier mon code secret</button>
+    ${me.isAdmin ? '<button class="btn" onclick="BankApp.admin()">⚡ Espace administrateur</button>' : ''}
+    <button class="btn dark" onclick="BankApp.logout()">Se déconnecter</button>`;
+  go('s-profile');
+}
+function changePin() {
+  const p = prompt('Nouveau code secret (4 chiffres) :', '');
+  if (p === null) return;
+  const pin = digits(p);
+  if (pin.length !== 4) { toast('4 chiffres requis'); return; }
+  me.pin = pin; persist(me); reload(); toast('Code secret modifié ✅');
+}
+
+/* ══════════ ADMINISTRATION ══════════ */
+function admin() {
+  reload();
+  if (!me || !me.isAdmin) { toast('Accès réservé'); return; }
+  const users = DB.all().slice().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  const fonds = users.filter(u => !u.isAdmin).reduce((s, u) => s + (Number(u.balance) || 0), 0);
+  const cartes = users.reduce((s, u) => s + (u.cards || []).length, 0);
+  $('admin-body').innerHTML = `
+    <div class="admin-card" style="text-align:center">
+      <div style="font-size:11px;font-weight:800;color:var(--grey);text-transform:uppercase;letter-spacing:1px">Encours clients ${esc(B.name)}</div>
+      <div style="font-size:30px;font-weight:800;color:var(--pri);margin-top:6px">${esc(fmt(fonds))}</div>
+      <div style="font-size:12px;color:var(--grey);margin-top:4px">${users.length} compte(s) · ${cartes} carte(s) émise(s)</div>
+    </div>
+    <div class="helpbox"><b>Mode d'emploi</b>
+      • <b>Créditer</b> : ajouter des fonds au compte client.<br/>
+      • <b>＋ Opération</b> : créer une opération (libellé, contrepartie, icône, date, montant).<br/>
+      • <b>Modifier / Supprimer</b> sur chaque ligne d'opération.<br/>
+      • <b>Solde</b>, <b>Code secret</b>, <b>Infos client</b>, <b>Supprimer le compte</b>.
+    </div>
+    <div class="sec-h">Comptes clients</div>` +
+    (users.length ? users.map(u => `
+      <div class="admin-card">
+        <div class="admin-head">
+          <div class="li-av">${esc((u.prenom || '?')[0].toUpperCase())}</div>
+          <div style="flex:1">
+            <div style="font-weight:800">${esc(fullName(u))}${u.isAdmin ? '<span class="admin-badge">ADMIN</span>' : ''}</div>
+            <div style="font-size:12px;color:var(--grey)">${B.dial} ${esc(u.phone)} · ${esc(u.accountType || '')}</div>
+          </div>
+          <div style="font-weight:800;color:var(--pri)">${esc(fmt(u.balance))}</div>
+        </div>
+        <div class="recap" style="margin-top:10px">
+          <div><span>N° d'inscription</span><b>${esc(regNumber(u))}</b></div>
+          <div><span>Email</span><b>${esc(u.email || '—')}</b></div>
+          <div><span>RIB</span><b>${esc(ribOf(u))}</b></div>
+          <div><span>Cartes</span><b>${(u.cards || []).length}</b></div>
+          <div><span>Opérations</span><b>${(u.txs || []).length}</b></div>
+        </div>
+        ${(u.cards || []).length ? `<div class="sec-h" style="margin:14px 4px 8px">Cartes émises</div>` +
+          u.cards.map(c => `<div class="recap" style="margin-bottom:8px">
+            <div><span>${esc(c.product)} · ${esc(c.network)}</span><b>${esc(panSpaced(c.pan))}</b></div>
+            <div><span>Exp / CVV</span><b>${esc(c.exp)} · ${esc(c.cvv)}</b></div>
+            <div><span>Solde carte</span><b>${esc(fmt(c.balance))}</b></div>
+          </div>`).join('') : ''}
+        <div class="sec-h" style="margin:14px 4px 8px">Opérations</div>
+        ${(u.txs || []).length ? u.txs.map((t, i) => `
+          <div class="tx" style="cursor:default">
+            <div class="ic">${t.icon || '•'}</div>
+            <div class="mid"><div class="t">${esc(t.title)}</div><div class="s">${esc(t.date)}${t.person ? ' • ' + esc(t.person) : ''}</div>
+              <div style="margin-top:6px;display:flex;gap:6px">
+                <button class="mini" onclick="BankApp.editTx('${js(u.phone)}',${i})">Modifier</button>
+                <button class="mini danger" onclick="BankApp.delTx('${js(u.phone)}',${i})">Supprimer</button>
+              </div></div>
+            <div class="a ${t.amount < 0 ? 'neg' : 'pos'}">${esc(fmt(t.amount))}</div>
+          </div>`).join('') : '<div class="empty" style="padding:14px">Aucune opération</div>'}
+        <div class="admin-actions">
+          <button class="mini solid" onclick="BankApp.openCredit('${js(u.phone)}')">Créditer</button>
+          <button class="mini" onclick="BankApp.addTx('${js(u.phone)}')">＋ Opération</button>
+          <button class="mini" onclick="BankApp.setBalance('${js(u.phone)}')">💰 Définir le solde</button>
+          <button class="mini" onclick="BankApp.editInfo('${js(u.phone)}')">✏️ Infos client</button>
+          <button class="mini" onclick="BankApp.resetPin('${js(u.phone)}')">🔑 Code secret</button>
+          <button class="mini" onclick="BankApp.adminCard('${js(u.phone)}')">💳 Émettre une carte</button>
+          <button class="mini danger" onclick="BankApp.delUser('${js(u.phone)}')">🗑️ Supprimer</button>
+        </div>
+      </div>`).join('') : '<div class="empty">Aucun client inscrit</div>');
+  go('s-admin');
+}
+function recalc(acc) {
+  const asc = (acc.txs || []).slice().sort((a, b) => (a.sortAt || 0) - (b.sortAt || 0));
+  let bal = Number(acc.openingBalance) || 0;
+  asc.forEach(t => { bal += Number(t.amount) || 0; t.balanceAfter = bal; });
+  acc.balance = bal;
+  acc.txs = (acc.txs || []).sort((a, b) => (b.sortAt || 0) - (a.sortAt || 0));
+}
+function openCredit(phone) {
+  adminTarget = phone;
+  const a = find(phone);
+  $('cr-title').textContent = 'Créditer ' + fullName(a);
+  $('cr-user').textContent = B.dial + ' ' + a.phone + ' · Solde : ' + fmt(a.balance);
+  $('cr-amount').value = ''; $('cr-note').value = '';
+  $('m-credit').classList.add('show');
+}
+function closeCredit() { $('m-credit').classList.remove('show'); }
+function doCredit() {
+  const v = parseInt(digits($('cr-amount').value) || '0', 10);
+  if (!v) { toast('Entrez un montant'); return; }
+  const a = find(adminTarget);
+  a.balance = (Number(a.balance) || 0) + v;
+  a.txs = a.txs || [];
+  a.txs.unshift({ icon: '🏦', title: 'Crédit ' + B.name, person: $('cr-note').value.trim() || 'Administration ' + B.name,
+    amount: v, date: nowLabel(), sortAt: Date.now(), balanceAfter: a.balance, ref: ref('AD'), note: $('cr-note').value.trim() });
+  persist(a); closeCredit(); toast(`${fmt(v)} crédités ✅`); admin();
+}
+function addTx(phone) {
+  adminTarget = phone; adminEditIdx = null;
+  const a = find(phone);
+  $('atx-title').textContent = 'Ajouter une opération';
+  $('atx-user').textContent = fullName(a) + ' · Solde : ' + fmt(a.balance);
+  $('atx-label').value = ''; $('atx-person').value = ''; $('atx-amount').value = ''; $('atx-sign').value = '+';
+  const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  $('atx-date').value = d.toISOString().slice(0, 16);
+  $('m-tx').classList.add('show');
+}
+function editTx(phone, i) {
+  adminTarget = phone; adminEditIdx = i;
+  const a = find(phone), t = a.txs[i];
+  $('atx-title').textContent = 'Modifier l\'opération';
+  $('atx-user').textContent = fullName(a) + ' · Solde : ' + fmt(a.balance);
+  $('atx-label').value = t.title || ''; $('atx-person').value = t.person || '';
+  $('atx-icon').value = t.icon || '🏦';
+  $('atx-sign').value = (t.amount || 0) < 0 ? '-' : '+';
+  $('atx-amount').value = String(Math.abs(t.amount || 0));
+  const d = new Date(t.sortAt || Date.now()); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  $('atx-date').value = d.toISOString().slice(0, 16);
+  $('m-tx').classList.add('show');
+}
+function closeTxModal() { $('m-tx').classList.remove('show'); }
+function saveTx() {
+  const a = find(adminTarget);
+  const v = parseInt(digits($('atx-amount').value) || '0', 10);
+  if (!v) { toast('Entrez un montant'); return; }
+  const when = $('atx-date').value ? new Date($('atx-date').value) : new Date();
+  const tx = {
+    icon: $('atx-icon').value,
+    title: $('atx-label').value.trim() || 'Opération',
+    person: $('atx-person').value.trim(),
+    amount: ($('atx-sign').value === '-' ? -v : v),
+    date: nowLabel(when), sortAt: when.getTime(), ref: ref('OP'), note: '',
+  };
+  a.txs = a.txs || [];
+  if (typeof a.openingBalance !== 'number') {
+    a.openingBalance = (Number(a.balance) || 0) - a.txs.reduce((s, t) => s + (Number(t.amount) || 0), 0);
   }
-
-  function persist() { DB.put(me); }
-
-  /* ═══════════════════════════════════════════
-     INITIALISATION
-     ═══════════════════════════════════════════ */
-  function applyTheme() {
-    var r = document.documentElement.style;
-    r.setProperty('--primary', CFG.primary);
-    r.setProperty('--primary-d', CFG.primaryDark);
-    r.setProperty('--soft', CFG.soft);
-    r.setProperty('--ink', CFG.ink);
-    r.setProperty('--card-a', CFG.cardA);
-    r.setProperty('--card-b', CFG.cardB);
-    document.title = CFG.name;
+  if (adminEditIdx === null) a.txs.unshift(tx); else a.txs[adminEditIdx] = Object.assign(a.txs[adminEditIdx], tx);
+  recalc(a); persist(a); closeTxModal(); toast('Opération enregistrée ✅'); admin();
+}
+function delTx(phone, i) {
+  const a = find(phone);
+  if (!confirm('Supprimer cette opération ?')) return;
+  if (typeof a.openingBalance !== 'number') {
+    a.openingBalance = (Number(a.balance) || 0) - (a.txs || []).reduce((s, t) => s + (Number(t.amount) || 0), 0);
   }
+  a.txs.splice(i, 1); recalc(a); persist(a); toast('Opération supprimée 🗑️'); admin();
+}
+function setBalance(phone) {
+  const a = find(phone);
+  const v = prompt('Nouveau solde pour ' + fullName(a) + ' (' + B.symbol + ') :', String(a.balance || 0));
+  if (v === null) return;
+  const n = parseFloat(String(v).replace(/[^\d.,-]/g, '').replace(',', '.')) || 0;
+  a.openingBalance = (Number(a.openingBalance) || 0) + (n - (Number(a.balance) || 0));
+  a.balance = n; recalc(a); persist(a); toast('Solde mis à jour · ' + fmt(a.balance)); admin();
+}
+function editInfo(phone) {
+  const a = find(phone);
+  const p = prompt('Prénom :', a.prenom || ''); if (p === null) return;
+  const n = prompt('Nom :', a.nom || ''); if (n === null) return;
+  const e = prompt('Email :', a.email || ''); if (e === null) return;
+  const t = prompt('Téléphone :', a.phone || ''); if (t === null) return;
+  const np = norm(t);
+  if (np.length < 6) { toast('Numéro invalide'); return; }
+  const others = DB.all().filter(x => norm(x.phone) !== norm(a.phone));
+  if (others.some(x => norm(x.phone) === np)) { toast('Numéro déjà utilisé'); return; }
+  a.prenom = p.trim() || a.prenom; a.nom = n.trim(); a.email = e.trim();
+  const was = a.phone; a.phone = np;
+  others.push(a); DB.save(others);
+  const s = DB.session(); if (s && norm(s.phone) === norm(was)) DB.setSession(np);
+  reload(); toast('Informations mises à jour ✅'); admin();
+}
+function resetPin(phone) {
+  const a = find(phone);
+  const p = prompt('Nouveau code secret (4 chiffres) pour ' + fullName(a) + ' :', '0000');
+  if (p === null) return;
+  const pin = digits(p);
+  if (pin.length !== 4) { toast('4 chiffres requis'); return; }
+  a.pin = pin; persist(a); toast('Code secret réinitialisé ✅'); admin();
+}
+function adminCard(phone) {
+  const a = find(phone);
+  const product = prompt('Type de carte :\n' + B.cardProducts.join('\n'), B.cardProducts[0]);
+  if (product === null) return;
+  const plafond = parseInt(digits(prompt('Plafond mensuel (' + B.symbol + ') :', '10000') || '0'), 10);
+  const holder = fullName(a).toUpperCase();
+  const d = new Date(); d.setFullYear(d.getFullYear() + 3);
+  const net = /master/i.test(product) ? 'Mastercard' : 'Visa';
+  const c = {
+    id: 'C' + Date.now(), product, network: net, pan: generatePan(net),
+    exp: String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getFullYear()).slice(-2),
+    cvv: String(Math.floor(100 + Math.random() * 900)), holder, balance: 0, plafond, active: true,
+    createdAt: new Date().toISOString(),
+  };
+  a.cards = a.cards || []; a.cards.unshift(c);
+  a.txs = a.txs || [];
+  a.txs.unshift({ icon: '💳', title: 'Émission carte ' + product, person: B.name, amount: 0, date: nowLabel(),
+    sortAt: Date.now(), balanceAfter: a.balance, ref: ref('CB'), note: panMask(c.pan) });
+  persist(a); toast('Carte émise ✅ ' + panMask(c.pan)); admin();
+}
+function delUser(phone) {
+  const a = find(phone);
+  if (!confirm('Supprimer définitivement le compte de ' + fullName(a) + ' ?')) return;
+  DB.save(DB.all().filter(x => norm(x.phone) !== norm(phone)));
+  toast('Compte supprimé 🗑️'); admin();
+}
 
-  function bind() {
-    // tabs
-    document.querySelectorAll('.tab').forEach(function (b) {
-      b.onclick = function () {
-        var id = b.getAttribute('data-tab');
-        if (!me) { go('s-auth'); return; }
-        if (id === 's-transfer') renderDirectory($('t-search').value);
-        if (id === 's-cards') renderCards();
-        if (id === 's-accounts') renderAccounts();
-        if (id === 's-menu') renderMenu();
-        if (id === 's-home') renderHome();
-        go(id);
-      };
-    });
-    // boutons [data-go]
-    document.querySelectorAll('[data-go]').forEach(function (b) {
-      b.onclick = function () {
-        var id = b.getAttribute('data-go');
-        if (id === 's-history') renderHistory();
-        go(id);
-      };
-    });
+/* ── API publique ── */
+window.BankApp = {
+  phKey, phDel, next, toPhone, register, pvKey, pvDel, logout,
+  home, toggleBal, action, menu, menuAction, profile, changePin,
+  accounts, addAccount, rib,
+  cards, newCardScreen, createCard, openCard, loadCard, toggleCard, deleteCard,
+  transfer, searchBenef, pick, newBenef, onAmount, askPin, closePin, pinKey, pinDel, closeSuccess,
+  payService, history: history_, openTx, copy,
+  admin, openCredit, closeCredit, doCredit, addTx, editTx, closeTxModal, saveTx, delTx,
+  setBalance, editInfo, resetPin, adminCard, delUser,
+};
 
-    $('go-register').onclick = function () { go('s-register'); };
-    $('go-login').onclick = function () { renderLoginList(); go('s-login'); };
-    $('r-submit').onclick = doRegister;
-    $('l-submit').onclick = doLogin;
-    $('nc-submit').onclick = doNewCard;
-    $('am-submit').onclick = doTransfer;
-    $('b-submit').onclick = findBenef;
-    $('sv-submit').onclick = doService;
-    $('am-input').oninput = updateRecap;
-    $('t-search').oninput = function () { renderDirectory(this.value); };
-    $('h-eye').onclick = function () { balVisible = !balVisible; renderHome(); };
-    $('hi-back').onclick = function () { go(currentTab === 's-history' ? 's-home' : currentTab); };
-    $('sv-back').onclick = function () { go('s-home'); };
-    $('pin-cancel').onclick = function () { pinTarget = null; go(flow ? 's-amount' : currentTab); };
-    $('sc-ok').onclick = function () { closeModal('m-success'); };
-    $('mc-close').onclick = function () { closeModal('m-card'); };
-
-    document.querySelectorAll('#s-pin .key[data-k]').forEach(function (b) {
-      b.onclick = function () { pinKey(b.getAttribute('data-k')); };
-    });
-    document.querySelectorAll('.modal').forEach(function (m) {
-      m.onclick = function (e) { if (e.target === m) m.classList.remove('on'); };
-    });
-
-    // saisie PIN : chiffres uniquement
-    ['r-pin', 'r-pin2', 'l-pin'].forEach(function (id) {
-      $(id).oninput = function () { this.value = digits(this.value).slice(0, 4); };
-    });
-    $('r-phone').oninput = function () { this.value = digits(this.value).slice(0, CFG.phoneLen); };
-    $('l-phone').oninput = function () { this.value = digits(this.value).slice(0, CFG.phoneLen); };
-  }
-
-  function start() {
-    applyTheme();
-    build();
-    bind();
-    var s = DB.session();
-    me = s ? DB.find(CFG.key, s) : null;
-    if (me) {
-      me.cards = me.cards || [];
-      me.txs = me.txs || [];
-      refreshAll();
-      go('s-home');
-    } else {
-      renderLoginList();
-      go('s-auth');
-    }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start);
-  } else {
-    start();
-  }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
 })();

@@ -68,7 +68,7 @@ const EYE_OFF = '<svg viewBox="0 0 24 24"><path d="M12 6.5c2.76 0 5 2.24 5 5 0 .
 
 const fmt = n => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[\u202f\s]/g, '.') + 'F';
 const $ = id => document.getElementById(id);
-const balHTML = n => '<span class="bal-num">' + (n === null ? '•••••' : (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[\u202f\s]/g, ' ')) + '</span><span class="bal-cur">F</span>';
+const balHTML = n => '<span class="bal-num">' + (n === null ? '•••••' : (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[\u202f\s]/g, '.')) + '</span><span class="bal-cur">F</span>';
 const digits = s => (s || '').replace(/\D/g, '');
 const normalizePhone = s => {
   let p = digits(s || '');
@@ -470,7 +470,7 @@ function renderTxs() {
           <div class="tx-t">${t.title}</div>
           <div class="tx-s">${t.date}${t.person ? ' • ' + t.person : ''}</div>
         </div>
-        <div class="tx-a ${t.amount < 0 ? 'neg' : 'pos'}">${t.amount > 0 ? '+' : ''}${fmt(t.amount)}</div>
+        <div class="tx-a ${t.amount < 0 ? 'neg' : 'pos'}">${fmt(t.amount)}</div>
       </div>`).join('');
 }
 function openTx(i) {
@@ -478,7 +478,7 @@ function openTx(i) {
   $('tx-body').innerHTML = `
     <div style="text-align:center;padding:20px 0 24px">
       <div style="font-size:48px">${t.icon}</div>
-      <div style="font-size:38px;font-weight:800;color:var(--violet);margin-top:10px">${t.amount > 0 ? '+' : ''}${fmt(t.amount)}</div>
+      <div style="font-size:38px;font-weight:800;color:var(--violet);margin-top:10px">${fmt(t.amount)}</div>
       <div style="color:var(--grey);margin-top:4px;font-size:13px">${t.date}</div>
     </div>
     <div class="recap">
@@ -490,6 +490,37 @@ function openTx(i) {
       <div><span>Référence</span><b>${t.ref}</b></div>
     </div>`;
   go('s-tx');
+}
+
+
+/* ══════════ RELATIONS INTER-APPLICATIONS PAYZONE ══════════
+   Permet à Wave d'envoyer de l'argent vers Attijari, CIH et Wafacash
+   (et de retrouver ces bénéficiaires dans la recherche). */
+const PZ_APPS = [
+  { key:'attijari', label:'Attijari Mobile', store:'pz_attijari_accounts', dial:'+212' },
+  { key:'cih',      label:'CIH BANK',        store:'pz_cih_accounts',      dial:'+212' },
+  { key:'wafacash', label:'Wafacash',        store:'pz_wafacash_accounts', dial:'+212' },
+];
+function pzRead(store){ try { return JSON.parse(localStorage.getItem(store) || '[]'); } catch(e){ return []; } }
+function pzNorm(s){ return (s||'').replace(/\D/g,'').replace(/^0+/,''); }
+function pzFind(phone){
+  const p = pzNorm(phone);
+  for (const app of PZ_APPS) {
+    const list = pzRead(app.store);
+    const i = list.findIndex(a => pzNorm(a.phone) === p);
+    if (i >= 0) return { app, list, i, acc: list[i] };
+  }
+  return null;
+}
+function pzCredit(entry, amount, fromName, note, stamp, reference){
+  const a = entry.acc;
+  a.balance = (Number(a.balance)||0) + amount;
+  a.txs = a.txs || [];
+  a.txs.unshift({ icon:'⬆️', title:'Reçu de ' + fromName, person:fromName, amount:amount,
+    date:nowLabel(), sortAt:stamp, balanceAfter:a.balance, ref:reference, note:note || 'Transfert Wave' });
+  entry.list[entry.i] = a;
+  localStorage.setItem(entry.app.store, JSON.stringify(entry.list));
+  return entry.app.label;
 }
 
 /* ══════════ TRANSFERT ══════════ */
@@ -511,7 +542,18 @@ function renderContacts(q) {
     <div><div class="li-name">${fullName(a)}</div><div class="li-sub">${a.countryFlag||''} ${a.countryCode} ${a.phone}</div></div>
     <span class="wave-tag">WAVE</span>
   </div>`;
-  $('t-contacts').innerHTML = `<div class="group-h">Contacts Wave (${filtered.length})</div>` + filtered.map(row).join('');
+  const ext = [];
+  PZ_APPS.forEach(app => pzRead(app.store).forEach(a => {
+    const nm = ((a.prenom||'') + ' ' + (a.nom||'')).trim();
+    if (!q || nm.toLowerCase().includes(q.toLowerCase()) || pzNorm(a.phone).includes(digits(q))) ext.push({ app, a, nm });
+  }));
+  const extRow = e => `<div class="list-item" onclick="pickContact('${e.a.phone}','${e.app.dial}','${e.nm.replace(/'/g,"\\'")}')">
+    <div class="li-av">${(e.nm[0]||'?').toUpperCase()}</div>
+    <div><div class="li-name">${e.nm}</div><div class="li-sub">${e.app.dial} ${e.a.phone}</div></div>
+    <span class="wave-tag">${e.app.label.toUpperCase()}</span>
+  </div>`;
+  $('t-contacts').innerHTML = `<div class="group-h">Contacts Wave (${filtered.length})</div>` + filtered.map(row).join('')
+    + (ext.length ? `<div class="group-h">Autres banques PayZone (${ext.length})</div>` + ext.map(extRow).join('') : '');
 }
 function pickContact(phone, code, name) { flow = { kind: 'transfer', to: { phone, code, name } }; openAmount(); }
 function checkNewNum() {
@@ -609,6 +651,11 @@ function execute() {
   persist(me);
 
   const dest = flow.to.phone ? findAcc(flow.to.phone, flow.to.code) : null;
+  if (!dest && flow.to.phone) {
+    // Bénéficiaire hébergé par une autre application PayZone (Attijari, CIH, Wafacash)
+    const ext = pzFind(flow.to.phone);
+    if (ext) { const label = pzCredit(ext, flow.amount, fullName(me) + ' (Wave)', note, stamp, ref); toast('Transfert envoyé vers ' + label + ' ✅'); }
+  }
   if (dest) {
     dest.balance += flow.amount;
     dest.txs.unshift({ icon:'⬆️', title:`Reçu de ${fullName(me)}`, person:fullName(me), phone:me.phone, code:me.countryCode, amount:flow.amount, date:nowLabel(), sortAt:stamp, balanceAfter:dest.balance, ref, note });
@@ -768,7 +815,7 @@ function adminTxPreview(a) {
         <div class="tx-s">${t.date || ''}${t.person ? ' • ' + t.person : ''}</div>
       </div>
       <div class="admin-tx-side">
-        <div class="tx-a ${t.amount < 0 ? 'neg' : 'pos'}">${t.amount > 0 ? '+' : ''}${fmt(t.amount || 0)}</div>
+        <div class="tx-a ${t.amount < 0 ? 'neg' : 'pos'}">${fmt(t.amount || 0)}</div>
         <div class="admin-tx-btns">
           <button class="admin-edit-tx" onclick="openAdminEditTx('${a.phone}','${a.countryCode}',${i})">Modifier</button>
           <button class="admin-edit-tx del" onclick="adminDeleteTx('${a.phone}','${a.countryCode}',${i})">Supprimer</button>

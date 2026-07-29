@@ -338,3 +338,6 @@ html,body{background:#fff;}
 .ic-pick{font-size:20px;line-height:1;padding:8px 0;border-radius:12px;border:1.5px solid #E6E8EE;background:#fff;cursor:pointer;}
 .ic-pick.on{border-color:#4B3BE8;background:#EFEDFE;}
 .admin-badge-sm{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.5px;background:#4B3BE8;color:#fff;border-radius:6px;padding:2px 5px;vertical-align:middle;}
+
+.admin-tx-btns{display:flex;gap:6px;margin-top:4px;justify-content:flex-end;flex-wrap:wrap}
+.admin-edit-tx.del{color:#DC2626;border-color:#F5C2C2}

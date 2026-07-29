@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>Attijari Mobile</title>
+<meta name="description" content="Attijari Mobile — ouvrez votre compte, consultez votre solde, effectuez vos virements et créez votre carte virtuelle e-Pay."/>
+<meta name="theme-color" content="#F26A3F"/>
+<link rel="icon" href="favicon.ico"/>
+<link rel="stylesheet" href="bank-style.css"/>
+</head>
+<body>
+<script>
+window.BANK = {
+  key: 'attijari',
+  name: 'Attijari Mobile',
+  legal: 'Attijariwafa bank',
+  slogan: "Votre banque au quotidien. Comptes, virements, cartes et paiements, où que vous soyez.",
+  logo: 'attijari.png',
+  primary: '#F26A3F',
+  primaryDark: '#C9431B',
+  soft: '#FFF1EC',
+  ink: '#0F2A44',
+  cardA: '#F26A3F',
+  cardB: '#7A2408',
+  currency: 'MAD',
+  symbol: 'DH',
+  dial: '+212',
+  phoneHint: '6 12 34 56 78',
+  phoneLen: 9,
+  feeRate: 0,
+  ribPrefix: 'ATW',
+  ibanPrefix: 'MA64 007 ',
+  accountTypes: ['Compte chèque', "Compte sur carnet", 'Compte en devises', 'Compte Hissab Bikhir'],
+  cardProducts: ['e-Pay (carte virtuelle)', 'WebCard Internet', 'Carte Prépayée Flouss'],
+  quick: [
+    { icon: '⇄',  label: 'Virement',       action: 'transfer' },
+    { icon: '💳', label: 'Carte virtuelle', action: 'newcard' },
+    { icon: '🧾', label: 'Factures',       action: 'service', field: 'Référence facture', placeholder: 'N° de facture', name: 'Paiement de facture' },
+    { icon: '📱', label: 'Recharge',       action: 'service', field: 'Numéro à recharger', placeholder: '06 XX XX XX XX' },
+    { icon: '👛', label: 'Mes comptes',    action: 'accounts' },
+    { icon: '🏦', label: 'Mon RIB',        action: 'rib' },
+    { icon: '🕘', label: 'Historique',     action: 'history' },
+    { icon: '🤲', label: 'Cash Express',   action: 'service', field: 'Bénéficiaire', placeholder: 'Nom du bénéficiaire' }
+  ],
+  menu: [
+    { icon: '👛', label: 'Mes comptes',        sub: 'Solde, RIB et informations', action: 'accounts' },
+    { icon: '💳', label: 'Mes cartes',         sub: 'Cartes virtuelles e-Pay',    action: 'cards' },
+    { icon: '⇄',  label: 'Virements',          sub: 'Vers tout compte PayZone',   action: 'transfer' },
+    { icon: '🧾', label: 'Paiement de factures', sub: 'Eau, électricité, télécom', action: 'service', field: 'Référence facture', placeholder: 'N° de facture' },
+    { icon: '📄', label: 'Mes documents',      sub: 'Relevés et attestations',    action: 'soon' },
+    { icon: '🎧', label: 'Contacter mon conseiller', sub: 'Service client Attijari', action: 'soon' }
+  ]
+};
+</script>
+<script src="bank-app.js"></script>
+</body>
+</html>

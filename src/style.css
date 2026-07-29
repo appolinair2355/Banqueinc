@@ -1,0 +1,78 @@
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;-webkit-tap-highlight-color:transparent}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;border:0;background:none;cursor:pointer}
+
+/* Home */
+.home{min-height:100vh;background:linear-gradient(#f8fafc,#e2e8f0)}
+.home header{max-width:480px;margin:0 auto;padding:40px 24px 24px;text-align:center}
+.home .brand{width:56px;height:56px;margin:0 auto 12px;border-radius:16px;background:linear-gradient(135deg,#0ea5e9,#4f46e5);color:#fff;font-weight:900;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 25px rgba(79,70,229,.3)}
+.home h1{font-size:26px;font-weight:900;letter-spacing:-.02em}
+.home .sub{margin-top:4px;font-size:14px;color:#64748b}
+.home main{max-width:480px;margin:0 auto;padding:0 16px 64px}
+.home h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;padding:0 8px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{display:flex;flex-direction:column;justify-content:space-between;height:160px;padding:16px;border-radius:18px;box-shadow:0 6px 16px rgba(0,0,0,.08);color:#fff;transition:transform .1s}
+.card:active{transform:scale(.96)}
+.card .logo{width:56px;height:56px;border-radius:14px;background:#fff;padding:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.15)}
+.card .logo img{width:100%;height:100%;object-fit:contain}
+.card .name{font-size:18px;font-weight:900;line-height:1.1}
+.card .tag{font-size:12px;opacity:.85;margin-top:2px}
+.footer{margin-top:32px;text-align:center;font-size:11px;color:#94a3b8}
+
+/* Bank app */
+.bank{min-height:100vh;background:#f1f5f9}
+.bank .top{padding:16px 16px 60px;color:#fff}
+.bank .topbar{max-width:480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.bank .back{font-size:24px;opacity:.9}
+.bank .title{display:flex;align-items:center;gap:8px;font-weight:900}
+.bank .title .b-logo{width:28px;height:28px;border-radius:50%;background:#fff;padding:3px;display:flex;align-items:center;justify-content:center}
+.bank .title .b-logo img{width:100%;height:100%;object-fit:contain}
+.bank .avatar{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:14px}
+.bank .balance{max-width:480px;margin:24px auto 0;text-align:center;padding:0 24px}
+.bank .balance .l{font-size:11px;text-transform:uppercase;letter-spacing:.2em;opacity:.85}
+.bank .balance .v{margin-top:4px;font-size:30px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:8px}
+.bank .balance .eye{font-size:16px;opacity:.75;background:none;border:0;color:inherit;cursor:pointer}
+.bank .balance .slogan{margin-top:4px;font-size:12px;opacity:.85}
+
+.bank .body{max-width:480px;margin:-40px auto 0;padding:0 16px}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:#fff;padding:16px;border-radius:18px;box-shadow:0 10px 20px rgba(0,0,0,.08)}
+.actions button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border-radius:12px}
+.actions .ic{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
+.actions .lb{font-size:11px;font-weight:600;color:#334155}
+.subcards{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.subcards .sc{background:#fff;padding:12px;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.subcards .t{font-size:10px;text-transform:uppercase;color:#94a3b8}
+.subcards .n{margin-top:4px;font-size:14px;font-weight:700}
+.subcards .s{font-size:12px;color:#64748b}
+.txs{margin-top:24px}
+.txs-head{display:flex;justify-content:space-between;padding:0 4px 8px;font-size:14px}
+.txs-head h3{font-weight:700;color:#1e293b}
+.txs-head span{color:#94a3b8;font-size:12px}
+.txs-list{background:#fff;border-radius:18px;box-shadow:0 2px 6px rgba(0,0,0,.05);overflow:hidden}
+.tx{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f1f5f9}
+.tx:last-child{border-bottom:0}
+.tx .ic{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px}
+.tx .in{background:#dcfce7;color:#166534}
+.tx .out{background:#fee2e2;color:#991b1b}
+.tx .mid{flex:1}
+.tx .lb{font-size:14px;font-weight:600;color:#1e293b}
+.tx .dt{font-size:12px;color:#94a3b8}
+.tx .amt{font-size:14px;font-weight:700}
+.tx .amt.in{color:#059669;background:none}
+.tx .amt.out{color:#e11d48;background:none}
+.bank .credit{padding:32px 0;text-align:center;font-size:11px;color:#94a3b8}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+.modal.hidden{display:none}
+.sheet{width:100%;max-width:480px;background:#fff;padding:24px;border-radius:24px 24px 0 0}
+.sheet-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.sheet-h h3{font-size:18px;font-weight:700}
+.sheet-h .x{font-size:26px;color:#94a3b8}
+.sheet label{font-size:12px;color:#64748b}
+.sheet input{width:100%;margin-top:4px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;outline:none}
+.sheet input.amt{padding:12px;font-size:20px;font-weight:700}
+.sheet .field{margin-bottom:12px}
+.sheet .submit{width:100%;margin-top:20px;padding:14px;border-radius:999px;font-weight:700;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.15)}

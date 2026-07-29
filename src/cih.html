@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>CIH BANK</title>
+<meta name="description" content="CIH BANK — ouvrez votre compte, suivez votre solde, effectuez vos virements et créez votre carte virtuelle e-Card."/>
+<meta name="theme-color" content="#EF7822"/>
+<link rel="icon" href="favicon.ico"/>
+<link rel="stylesheet" href="bank-style.css"/>
+</head>
+<body>
+<script>
+window.BANK = {
+  key: 'cih',
+  name: 'CIH BANK',
+  legal: 'Crédit Immobilier et Hôtelier',
+  slogan: "La banque qui va vite. Ouvrez votre compte en ligne et pilotez tout depuis votre mobile.",
+  logo: 'cih.png',
+  primary: '#EF7822',
+  primaryDark: '#C85608',
+  soft: '#FFF3E6',
+  ink: '#2B3A55',
+  cardA: '#C42020',
+  cardB: '#6B0F0F',
+  currency: 'MAD',
+  symbol: 'MAD',
+  dial: '+212',
+  phoneHint: '6 12 34 56 78',
+  phoneLen: 9,
+  feeRate: 0,
+  ribPrefix: 'CIH',
+  ibanPrefix: 'MA64 230 ',
+  accountTypes: ['Compte chèque', 'Compte Code 30', 'Compte sur carnet', 'Compte Jeune'],
+  cardProducts: ['Carte Code Gamer (virtuelle)', 'Carte DIMA MAGHRIB', 'Carte Web Internationale'],
+  quick: [
+    { icon: '⇄',  label: 'Virement',        action: 'transfer' },
+    { icon: '💳', label: 'Carte virtuelle', action: 'newcard' },
+    { icon: '📋', label: 'Factures',        action: 'service', field: 'Référence facture', placeholder: 'N° de facture' },
+    { icon: '📱', label: 'Recharge',        action: 'service', field: 'Numéro à recharger', placeholder: '06 XX XX XX XX' },
+    { icon: '💸', label: 'Transfert',       action: 'transfer' },
+    { icon: '👛', label: 'Mes comptes',     action: 'accounts' },
+    { icon: '🏦', label: 'Mon RIB',         action: 'rib' },
+    { icon: '🕘', label: 'Historique',      action: 'history' }
+  ],
+  menu: [
+    { icon: '👛', label: 'Mes comptes',     sub: 'Solde, RIB et informations',  action: 'accounts' },
+    { icon: '💳', label: 'Mes cartes',      sub: 'Cartes virtuelles e-Card',    action: 'cards' },
+    { icon: '⇄',  label: 'Virements',       sub: 'Plafond 100 000,00 MAD / jour', action: 'transfer' },
+    { icon: '📋', label: 'Payez vos factures', sub: 'Lydec, Redal, IAM, Orange', action: 'service', field: 'Référence facture', placeholder: 'N° de facture' },
+    { icon: '📄', label: 'Mes relevés',     sub: 'Consultation de documents',   action: 'soon' },
+    { icon: '🎧', label: 'Contacter mon conseiller', sub: 'CIH Direct',         action: 'soon' }
+  ]
+};
+</script>
+<script src="bank-app.js"></script>
+</body>
+</html>

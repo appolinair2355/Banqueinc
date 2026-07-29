@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Wave</title>
+<link rel="stylesheet" href="wave-style.css"/>
+</head>
+<body>
+<div id="app">
+
+<!-- ══════════ SPLASH ══════════ -->
+<div id="s-splash" class="screen splash-screen active">
+  <div class="splash-inner">
+    <svg class="splash-penguin" viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg">
+      <!-- body -->
+      <ellipse cx="60" cy="152" rx="44" ry="62" fill="#111"/>
+      <!-- belly -->
+      <ellipse cx="60" cy="165" rx="27" ry="43" fill="#f2f2f2"/>
+      <!-- head -->
+      <circle cx="60" cy="66" r="40" fill="#111"/>
+      <!-- eye whites -->
+      <circle cx="46" cy="60" r="9" fill="white"/>
+      <circle cx="74" cy="60" r="9" fill="white"/>
+      <!-- pupils -->
+      <circle cx="48" cy="62" r="4" fill="#111"/>
+      <circle cx="76" cy="62" r="4" fill="#111"/>
+      <!-- eye shine -->
+      <circle cx="50" cy="60" r="1.5" fill="white"/>
+      <circle cx="78" cy="60" r="1.5" fill="white"/>
+      <!-- beak -->
+      <path d="M60 76 L51 91 L69 91 Z" fill="#FF8C00"/>
+      <!-- left wing raised / waving -->
+      <path d="M17,110 C2,82 4,45 22,36 C30,32 36,42 32,58 C29,70 23,90 17,110 Z" fill="#111"/>
+      <!-- right wing -->
+      <ellipse cx="103" cy="155" rx="13" ry="40" transform="rotate(12,103,155)" fill="#111"/>
+      <!-- left foot -->
+      <ellipse cx="47" cy="209" rx="19" ry="9" fill="#FF8C00"/>
+      <!-- right foot -->
+      <ellipse cx="73" cy="209" rx="19" ry="9" fill="#FF8C00"/>
+    </svg>
+  </div>
+</div>
+
+<!-- ══════════ SAISIE NUMÉRO (image 1) ══════════ -->
+<div id="s-phone" class="screen phone-screen">
+  <div class="phone-title">Bienvenue chez Wave&nbsp;! Pour commencer, entrez votre numéro mobile</div>
+  <div class="phone-row">
+    <div class="country-pill" onclick="openCountrySheet()">
+      <span id="ph-flag">🇨🇮</span>
+      <span id="ph-code">+225</span>
+      <span class="caret">▾</span>
+    </div>
+    <div class="phone-digits-wrap">
+      <div class="phone-digits" id="ph-digits"><span class="ph-placeholder">XX XX XX XX XX</span></div>
+      <div class="ph-underline"></div>
+    </div>
+  </div>
+  <div class="phone-keypad">
+    <div class="pkey" onclick="phoneKey('1')">1</div>
+    <div class="pkey" onclick="phoneKey('2')">2</div>
+    <div class="pkey" onclick="phoneKey('3')">3</div>
+    <div class="pkey" onclick="phoneKey('4')">4</div>
+    <div class="pkey" onclick="phoneKey('5')">5</div>
+    <div class="pkey" onclick="phoneKey('6')">6</div>
+    <div class="pkey" onclick="phoneKey('7')">7</div>
+    <div class="pkey" onclick="phoneKey('8')">8</div>
+    <div class="pkey" onclick="phoneKey('9')">9</div>
+    <div class="pkey pkey-empty"></div>
+    <div class="pkey" onclick="phoneKey('0')">0</div>
+    <div class="pkey pkey-del" onclick="phoneDel()">⌫</div>
+  </div>
+  <button class="btn suivant-btn" id="suivant-btn" onclick="suivant()">Suivant</button>
+</div>
+
+<!-- ══════════ SÉLECTEUR PAYS (bottom sheet) ══════════ -->
+<div class="modal" id="m-country">
+  <div class="modal-bg" onclick="closeCountrySheet()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Choisir un pays</div>
+    <input class="search-field" id="country-search" placeholder="🔍  Rechercher un pays…" oninput="filterCountries(this.value)"/>
+    <div id="country-list-modal" style="max-height:55vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- ══════════ INSCRIPTION ══════════ -->
+<div id="s-register" class="screen auth-screen scrollable">
+  <div class="auth-header">
+    <div class="wave-brand">wave</div>
+    <div class="auth-tagline">Créez votre compte</div>
+  </div>
+  <div class="reg-phone-tag" id="reg-phone-tag"></div>
+  <div class="field-row two">
+    <div><label class="label">Prénom</label><input id="su-prenom" class="field" placeholder="Prénom"/></div>
+    <div><label class="label">Nom</label><input id="su-nom" class="field" placeholder="Nom de famille"/></div>
+  </div>
+  <div class="field-row">
+    <label class="label">Sexe</label>
+    <select id="su-sexe" class="field-select">
+      <option value="">Sélectionner…</option>
+      <option value="M">Homme (M)</option>
+      <option value="F">Femme (F)</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <label class="label">Type de compte</label>
+    <select id="su-type" class="field-select">
+      <option value="simple">Compte simple (transferts et paiements)</option>
+      <option value="marchand">Compte marchand (liens de paiement)</option>
+    </select>
+  </div>
+  <div class="field-row">
+    <label class="label">Adresse email (Gmail)</label>
+    <input id="su-email" class="field" type="email" placeholder="exemple@gmail.com"/>
+  </div>
+  <div class="field-row">
+    <label class="label">Code secret Wave (4 chiffres)</label>
+    <input id="su-pin" class="field pin-input" type="tel" maxlength="4" placeholder="••••"/>
+  </div>
+  <div class="err" id="su-err">Veuillez remplir tous les champs correctement</div>
+  <button class="btn" onclick="signupSubmit()">Créer mon compte</button>
+  <div class="center-note"><a class="link" onclick="go('s-phone')">‹ Retour</a></div>
+  <div style="height:40px"></div>
+</div>
+
+<!-- ══════════ VÉRIFICATION PIN (connexion) ══════════ -->
+<div id="s-pin-verify" class="screen pv-screen">
+  <div class="pv-top">
+    <div class="pv-avatar" id="pv-avatar">?</div>
+    <div class="pv-name" id="pv-name">Utilisateur</div>
+    <div class="pv-sub">Entrez votre code secret</div>
+  </div>
+  <div class="pin-dots" id="pv-dots">
+    <div class="pin-dot"></div><div class="pin-dot"></div>
+    <div class="pin-dot"></div><div class="pin-dot"></div>
+  </div>
+  <div class="keypad pv-keypad">
+    <div class="key" onclick="pvKey('1')">1</div>
+    <div class="key" onclick="pvKey('2')">2</div>
+    <div class="key" onclick="pvKey('3')">3</div>
+    <div class="key" onclick="pvKey('4')">4</div>
+    <div class="key" onclick="pvKey('5')">5</div>
+    <div class="key" onclick="pvKey('6')">6</div>
+    <div class="key" onclick="pvKey('7')">7</div>
+    <div class="key" onclick="pvKey('8')">8</div>
+    <div class="key" onclick="pvKey('9')">9</div>
+    <div class="key key-ghost" onclick="logout()">Changer</div>
+    <div class="key" onclick="pvKey('0')">0</div>
+    <div class="key" onclick="pvDel()">⌫</div>
+  </div>
+</div>
+
+<!-- ══════════ ACCUEIL (Wave Marchand) ══════════ -->
+<div id="s-home" class="screen mch">
+  <div class="mch-top">
+    <div class="top-bar">
+      <span class="top-icon set-left" onclick="renderSettings()"><svg viewBox="0 0 24 24" fill="#1B2A6B" width="24" height="24"><path d="M19.14 12.94a7.07 7.07 0 000-1.88l2.03-1.58a.5.5 0 00.12-.64l-1.92-3.32a.5.5 0 00-.6-.22l-2.39.96a7.03 7.03 0 00-1.63-.94l-.36-2.54a.5.5 0 00-.5-.42h-3.84a.5.5 0 00-.5.42l-.36 2.54c-.58.24-1.13.55-1.63.94l-2.39-.96a.5.5 0 00-.6.22L2.65 8.84a.5.5 0 00.12.64l2.03 1.58a7.07 7.07 0 000 1.88l-2.03 1.58a.5.5 0 00-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.39 1.05.7 1.63.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.24 1.13-.55 1.63-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 00-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"/></svg></span>
+      <span id="h-avatar" class="avatar" style="display:none" onclick="renderProfile()">?</span>
+      <span id="admin-btn" style="display:none" onclick="renderAdmin()" class="admin-badge">ADMIN</span>
+    </div>
+
+    <div class="solde-label">SOLDE</div>
+    <div class="bal-row">
+      <span class="bal-amount" id="h-bal"><span class="bal-num">0</span><span class="bal-cur">F</span></span>
+      <span class="bal-eye" id="bal-eye" onclick="toggleBal()"></span>
+    </div>
+
+    <button class="encaisser-btn" onclick="openScanner()">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="26" height="26"><path d="M4 4h5v2H6v3H4V4zm11 0h5v5h-2V6h-3V4zM4 15h2v3h3v2H4v-5zm14 0h2v5h-5v-2h3v-3zM8.5 8.5h3v3h-3v-3zM13 8.5h1.5V10H13V8.5zM15 10h1.5v1.5H15V10zm-1.5 1.5H15V13h-1.5v-1.5zM8.5 13h3v2.5h-3V13zM13 13.5h1.5V15H13v-1.5zm2 1.5h1.5v1.5H15V15z"/></svg>
+      ENCAISSER UN CLIENT
+    </button>
+  </div>
+
+  <div class="mch-actions-card">
+    <div class="action-grid">
+      <div class="action-tile" onclick="openTransfer()">
+        <div class="tile-circle" style="background:#DDE3F7">
+          <svg viewBox="0 0 24 24" fill="#5B6EC4" width="30" height="30"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        </div>
+        <span>Transfert</span>
+      </div>
+
+      <div class="action-tile" onclick="openMerchant()">
+        <div class="tile-circle" style="background:#D6EEFB">
+          <svg viewBox="0 0 24 24" fill="#3AA3DC" width="30" height="30"><path d="M3.8 9.5 12 3l8.2 6.5V11H3.8V9.5zM5 12h14v7h-2v-5H7v5H5v-7zm4 4h6v3H9v-3z"/></svg>
+        </div>
+        <span>Payer<br/>marchand</span>
+        <em class="tile-badge">Sans frais</em>
+      </div>
+
+      <div class="action-tile" onclick="openLink()">
+        <div class="tile-circle" style="background:#FDE4D3">
+          <svg viewBox="0 0 24 24" fill="#F0782E" width="30" height="30"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7a5 5 0 000 10h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4a5 5 0 000-10z"/></svg>
+        </div>
+        <span>Envoi de lien</span>
+      </div>
+
+      <div class="action-tile" onclick="openWithdraw()">
+        <div class="tile-circle" style="background:#D6F4DC">
+          <svg viewBox="0 0 24 24" fill="#22A04A" width="30" height="30"><path d="M2 6h20v12H2V6zm2 2v8h16V8H4zm8 1.5A2.5 2.5 0 1 1 12 14.5 2.5 2.5 0 0 1 12 9.5zM5.5 9.5h2v5h-2v-5zm11 0h2v5h-2v-5z"/></svg>
+        </div>
+        <span>Retrait</span>
+      </div>
+
+      <div class="action-tile" onclick="renderCoffres()">
+        <div class="tile-circle" style="background:#FBD7EE">
+          <svg viewBox="0 0 24 24" fill="#E03CA5" width="30" height="30"><path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm2 2v14h12V5H6zm3 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm5 0h3v1.5h-3V8zm0 3h3v1.5h-3V11zm-5 4h8v1.5H9V15z"/></svg>
+        </div>
+        <span>Coffre</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mch-body">
+    <div id="h-txs"></div>
+  </div>
+</div>
+<!-- ══════════ TRANSFERT ══════════ -->
+<div id="s-transfer" class="screen">
+  <div class="page-head">
+    <div class="back" onclick="go('s-home')">‹</div>
+    <div class="page-title">Envoyer de l'argent</div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body">
+    <input class="search-field" id="t-search" placeholder="🔍  Nom ou numéro" oninput="renderContacts(this.value)"/>
+    <div class="add-row" onclick="go('s-newnum')">
+      <div class="add-ic">+</div>
+      <div><div class="li-name">Nouveau numéro</div><div class="li-sub">Entrez un numéro manuellement</div></div>
+    </div>
+    <div id="t-contacts"></div>
+  </div>
+</div>
+
+<!-- ══════════ NOUVEAU NUMÉRO ══════════ -->
+<div id="s-newnum" class="screen">
+  <div class="page-head">
+    <div class="back" onclick="go('s-transfer')">‹</div>
+    <div class="page-title">Nouveau destinataire</div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body">
+    <label class="label">Nom complet</label>
+    <input id="nn-name" class="field" placeholder="Nom et prénom" oninput="checkNewNum()"/>
+    <div style="height:20px"></div>
+    <label class="label">Téléphone</label>
+    <div class="phone-input-row">
+      <span class="cc-sm" id="nn-cc">🇨🇮 +225</span>
+      <input id="nn-phone" class="field" type="tel" placeholder="XX XX XX XX XX" oninput="checkNewNum()"/>
+    </div>
+  </div>
+  <div class="page-foot"><button id="nn-btn" class="btn disabled" onclick="confirmNewNum()">Suivant</button></div>
+</div>
+
+<!-- ══════════ MONTANT ══════════ -->
+<div id="s-amount" class="screen">
+  <div class="page-head">
+    <div class="back" onclick="go('s-transfer')">‹</div>
+    <div class="page-title" id="am-title">Montant</div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body amount-body">
+    <div class="amount-contact-card" id="am-contact-card"></div>
+    <input id="am-input" class="amount-input" type="tel" placeholder="0 F" oninput="onAmount()"/>
+    <div class="amount-hint" id="am-bal-hint"></div>
+    <div class="recap" id="am-recap"></div>
+    <div class="err" id="am-err">Solde insuffisant</div>
+    <div class="field-row" style="margin-top:16px">
+      <label class="label">Motif (optionnel)</label>
+      <input id="am-note" class="field" placeholder="Ex: Remboursement, facture…"/>
+    </div>
+  </div>
+  <div class="page-foot"><button id="am-btn" class="btn disabled" onclick="startPin()">Continuer</button></div>
+</div>
+
+<!-- ══════════ COFFRE ══════════ -->
+<div id="s-coffre" class="screen">
+  <div class="page-head">
+    <div class="back" onclick="go('s-home')">‹</div>
+    <div class="page-title">Mon Coffre</div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body bg-body">
+    <div class="coffre-header">
+      <div class="total-label">SOLDE TOTAL DU COFFRE</div>
+      <div class="total-amt" id="cf-total">0 F</div>
+    </div>
+    <div id="cf-list"></div>
+  </div>
+  <div class="page-foot bg-foot">
+    <button class="btn" onclick="addCoffre()">＋ Nouveau coffre</button>
+  </div>
+</div>
+
+<!-- ══════════ LIEN DE PAIEMENT ══════════ -->
+<div id="s-link" class="screen">
+  <div class="page-head">
+    <div class="back" onclick="go('s-home')">‹</div>
+    <div class="page-title">Lien de paiement</div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body">
+    <p class="info-text">Partagez votre lien. La personne qui l'ouvre vous paie directement depuis Wave.</p>
+    <div id="my-link-display"></div>
+    <label class="label" style="margin-top:20px">Montant à recevoir</label>
+    <input id="lk-amount" class="field" type="tel" placeholder="0 F"/>
+    <label class="label" style="margin-top:20px">Motif (optionnel)</label>
+    <input id="lk-note" class="field" placeholder="Ex : Facture n°12"/>
+    <div id="lk-result"></div>
+  </div>
+  <div class="page-foot"><button class="btn" onclick="createLink()">Générer le lien</button></div>
+</div>
+
+<!-- ══════════ DÉPENSES ══════════ -->
+<div id="s-expenses" class="screen">
+  <div class="page-head">
+    <div class="back" onclick="go('s-home')">‹</div>
+    <div class="page-title">Dépenses</div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body" id="ex-body"></div>
+</div>
+
+<!-- ══════════ PROFIL ══════════ -->
+<div id="s-profile" class="screen">
+  <div class="page-head">
+    <div class="back" onclick="go('s-home')">‹</div>
+    <div class="page-title">Mon profil</div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body" id="pr-body"></div>
+  <div class="page-foot"><button class="btn danger" onclick="logout()">Se déconnecter</button></div>
+</div>
+
+<!-- ══════════ TRANSACTION DÉTAIL ══════════ -->
+<div id="s-tx" class="screen">
+  <div class="page-head">
+    <div class="back" onclick="go('s-home')">‹</div>
+    <div class="page-title">Détail transaction</div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body" id="tx-body"></div>
+</div>
+
+<!-- ══════════ ADMIN ══════════ -->
+<div id="s-admin" class="screen">
+  <div class="page-head" style="background:linear-gradient(90deg,#4B3BE8,#7C3AED)">
+    <div class="back" style="color:#fff" onclick="go('s-home')">‹</div>
+    <div class="page-title" style="color:#fff">⚡ Administration</div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body bg-body" id="admin-body"></div>
+</div>
+
+<!-- ══════════ PAGE SIMPLE ══════════ -->
+<div id="s-simple" class="screen">
+  <div class="page-head">
+    <div class="back" onclick="go('s-home')">‹</div>
+    <div class="page-title" id="sp-title"></div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body"><div class="empty"><div class="big">✨</div><div id="sp-text" style="margin-top:12px;color:var(--grey)"></div></div></div>
+</div>
+
+<!-- ══════════ MODALS ══════════ -->
+
+<!-- PIN transaction -->
+<div class="modal" id="m-pin">
+  <div class="modal-bg" onclick="closePin()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">Code secret</h3>
+    <p class="sheet-sub">Confirmez avec votre code à 4 chiffres</p>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="keypad">
+      <div class="key" onclick="pinKey('1')">1</div>
+      <div class="key" onclick="pinKey('2')">2</div>
+      <div class="key" onclick="pinKey('3')">3</div>
+      <div class="key" onclick="pinKey('4')">4</div>
+      <div class="key" onclick="pinKey('5')">5</div>
+      <div class="key" onclick="pinKey('6')">6</div>
+      <div class="key" onclick="pinKey('7')">7</div>
+      <div class="key" onclick="pinKey('8')">8</div>
+      <div class="key" onclick="pinKey('9')">9</div>
+      <div class="key key-ghost" onclick="closePin()">Annuler</div>
+      <div class="key" onclick="pinKey('0')">0</div>
+      <div class="key" onclick="pinDel()">⌫</div>
+    </div>
+  </div>
+</div>
+
+<!-- Succès -->
+<div class="modal" id="m-success">
+  <div class="success-overlay">
+    <div class="success-card">
+      <div class="success-icon-wrap">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="#fff" width="52" height="52"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <div class="success-rings"></div>
+      </div>
+      <div class="success-title" id="sc-title">Paiement effectué</div>
+      <div class="success-amount" id="sc-amount"></div>
+      <div class="success-to" id="sc-to"></div>
+      <div class="recap" id="sc-recap"></div>
+      <button class="btn" onclick="closeSuccess()">Retour à l'accueil</button>
+    </div>
+  </div>
+</div>
+
+<!-- Coffre modal -->
+<div class="modal" id="m-coffre">
+  <div class="modal-bg" onclick="closeCoffreModal()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="coffre-modal-header" id="cm-header"></div>
+    <div class="coffre-modal-balance" id="cm-balance"></div>
+    <div class="field-row">
+      <label class="label">Montant</label>
+      <input id="cm-amount" class="field amount-input-sm" type="tel" placeholder="0 F"/>
+    </div>
+    <div class="coffre-modal-btns">
+      <button class="btn" onclick="coffreDoDeposit()">⬇ Déposer</button>
+      <button class="btn ghost" onclick="coffreDoWithdraw()">⬆ Retirer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin crédit modal -->
+<div class="modal" id="m-admin-credit">
+  <div class="modal-bg" onclick="closeAdminCredit()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title" id="acm-title">Créditer le compte</h3>
+    <div class="reg-phone-tag" id="acm-user"></div>
+    <div class="field-row">
+      <label class="label">Montant à attribuer</label>
+      <input id="acm-amount" class="field amount-input-sm" type="tel" placeholder="Ex: 50000"/>
+    </div>
+    <div class="field-row">
+      <label class="label">Motif</label>
+      <input id="acm-note" class="field" placeholder="Ex: Bonus, aide…"/>
+    </div>
+    <button class="btn" style="margin-top:20px" onclick="adminDoCredit()">✓ Attribuer l'argent</button>
+  </div>
+</div>
+
+
+<!-- Admin ajout de transaction -->
+<div class="modal" id="m-admin-tx">
+  <div class="modal-bg" onclick="closeAdminTx()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title" id="atx-modal-title">Ajouter une transaction</h3>
+    <div class="reg-phone-tag" id="atx-user"></div>
+    <div class="field-row">
+      <label class="label">Libellé</label>
+      <input id="atx-title-in" class="field" placeholder="Ex: Vendu à Zara K"/>
+    </div>
+    <div class="field-row">
+      <label class="label">Nom du service</label>
+      <input id="atx-service" class="field" placeholder="Ex: Cesard Service"/>
+    </div>
+    <div class="field-row">
+      <label class="label">Icône du service</label>
+      <div id="atx-icons" class="ic-grid"></div>
+    </div>
+    <div class="field-row">
+      <label class="label">Date et heure</label>
+      <input id="atx-date" class="field" type="datetime-local"/>
+    </div>
+    <div class="field-row">
+      <label class="label">Montant</label>
+      <div style="display:flex;gap:8px">
+        <select id="atx-sign" class="field" style="max-width:110px">
+          <option value="+">+ Entrée</option>
+          <option value="-">- Sortie</option>
+        </select>
+        <input id="atx-amount" class="field amount-input-sm" type="tel" placeholder="Ex: 60000"/>
+      </div>
+    </div>
+    <button class="btn" id="atx-action-btn" style="margin-top:18px" onclick="adminSaveTx()">✓ Ajouter la transaction</button>
+  </div>
+</div>
+
+<!-- Scanner QR -->
+<div class="modal" id="m-scan">
+  <div class="modal-bg" onclick="closeScanner()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">Scanner un QR code</h3>
+    <div class="sheet-sub" id="scan-status">Ouverture de la caméra…</div>
+    <div id="scan-reader" class="scan-reader"></div>
+    <button class="btn ghost" style="margin-top:16px" onclick="closeScanner()">Fermer</button>
+  </div>
+</div>
+
+<!-- Bienvenue -->
+<div class="modal" id="m-welcome">
+  <div class="modal-bg"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title" id="wc-title">Bienvenue !</h3>
+    <div class="sheet-sub" id="wc-text"></div>
+    <div class="welcome-qr" id="wc-qr"></div>
+    <button class="btn" style="margin-top:18px" onclick="closeWelcome()">Commencer</button>
+  </div>
+</div>
+
+<!-- ══════════ PARAMÈTRES ══════════ -->
+<div id="s-settings" class="screen">
+  <div class="page-head">
+    <div class="back" onclick="go('s-home')">‹</div>
+    <div class="page-title">Paramètres</div>
+    <div style="width:32px"></div>
+  </div>
+  <div class="page-body bg-body" id="set-body"></div>
+</div>
+
+<!-- Langue -->
+<div class="modal" id="m-lang">
+  <div class="modal-bg" onclick="closeLangSheet()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Langue de l'application</div>
+    <div id="lang-list" style="max-height:55vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- Service client -->
+<div class="modal" id="m-support">
+  <div class="modal-bg" onclick="closeSupport()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Service client</div>
+    <div class="sheet-sub">Notre équipe est disponible 7j/7 de 8h à 22h.</div>
+    <a class="set-item" href="tel:+2250170620767"><div class="set-ic">📞</div><div class="set-mid"><div class="set-t">Appeler Wave</div><div class="set-s">+225 01 70 62 07 67</div></div><span class="set-caret">›</span></a>
+    <a class="set-item" href="https://wa.me/2250170620767" target="_blank" rel="noopener"><div class="set-ic">💬</div><div class="set-mid"><div class="set-t">WhatsApp</div><div class="set-s">Chat instantané</div></div><span class="set-caret">›</span></a>
+    <a class="set-item" href="mailto:support@wave.com"><div class="set-ic">✉️</div><div class="set-mid"><div class="set-t">Email</div><div class="set-s">support@wave.com</div></div><span class="set-caret">›</span></a>
+    <button class="btn ghost" style="margin-top:14px" onclick="closeSupport()">Fermer</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div><!-- #app -->
+
+<script src="wave-qrcode.min.js"></script>
+<script src="wave-html5-qrcode.min.js"></script>
+<script src="wave-app.js"></script>
+</body>
+</html>

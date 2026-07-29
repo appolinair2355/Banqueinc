@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>Wafacash</title>
+<meta name="description" content="Wafacash — ouvrez votre compte, envoyez et recevez de l'argent, payez vos factures et créez votre carte prépayée virtuelle."/>
+<meta name="theme-color" content="#00A651"/>
+<link rel="icon" href="favicon.ico"/>
+<link rel="stylesheet" href="bank-style.css"/>
+</head>
+<body>
+<script>
+window.BANK = {
+  key: 'wafacash',
+  name: 'Wafacash',
+  legal: 'Wafacash — Groupe Attijariwafa bank',
+  slogan: "Le transfert d'argent simple et rapide. Envoyez, recevez et payez partout.",
+  logo: 'wafacash.png',
+  primary: '#00A651',
+  primaryDark: '#00753A',
+  soft: '#E7F7EE',
+  ink: '#123B28',
+  cardA: '#00A651',
+  cardB: '#004E27',
+  currency: 'MAD',
+  symbol: 'DH',
+  dial: '+212',
+  phoneHint: '6 12 34 56 78',
+  phoneLen: 9,
+  feeRate: 0.01,
+  ribPrefix: 'WFC',
+  ibanPrefix: 'MA64 145 ',
+  accountTypes: ['Compte Wafacash', 'Compte Cash Express', 'Compte Hissab Bikhir'],
+  cardProducts: ['Carte Floussy (prépayée virtuelle)', 'Floussy Web', 'Carte Voyage'],
+  quick: [
+    { icon: '💸', label: "Envoyer",         action: 'transfer' },
+    { icon: '📥', label: 'Recevoir',        action: 'rib' },
+    { icon: '💳', label: 'Carte virtuelle', action: 'newcard' },
+    { icon: '🧾', label: 'Factures',        action: 'service', field: 'Référence facture', placeholder: 'N° de facture' },
+    { icon: '📱', label: 'Recharge',        action: 'service', field: 'Numéro à recharger', placeholder: '06 XX XX XX XX' },
+    { icon: '🌍', label: 'Transfert intl.', action: 'transfer' },
+    { icon: '👛', label: 'Mon compte',      action: 'accounts' },
+    { icon: '🕘', label: 'Historique',      action: 'history' }
+  ],
+  menu: [
+    { icon: '👛', label: 'Mon compte',      sub: 'Solde, RIB et informations',   action: 'accounts' },
+    { icon: '💳', label: 'Mes cartes',      sub: 'Cartes prépayées virtuelles',  action: 'cards' },
+    { icon: '💸', label: "Envoi d'argent",  sub: 'Vers tout compte PayZone',     action: 'transfer' },
+    { icon: '🧾', label: 'Paiement de factures', sub: 'Eau, électricité, télécom', action: 'service', field: 'Référence facture', placeholder: 'N° de facture' },
+    { icon: '📍', label: 'Agences Wafacash', sub: 'Trouver un point de service', action: 'soon' },
+    { icon: '🎧', label: 'Service client',  sub: 'Assistance Wafacash',          action: 'soon' }
+  ]
+};
+</script>
+<script src="bank-app.js"></script>
+</body>
+</html>

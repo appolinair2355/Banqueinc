@@ -20,9 +20,23 @@ const COUNTRIES = [
 ];
 
 /* ── CONFIG ── */
-const ADMIN_PHONE   = '67924076';
+const ADMIN_PHONE   = '060606';
 const ADMIN_COUNTRY = '+225';
 const PIN_TIMEOUT   = 60 * 60 * 1000; // 1 heure en ms
+
+/* ── RESET AU DÉMARRAGE ──
+   À chaque (re)démarrage de l'application, toutes les anciennes données
+   locales sont effacées et les données de référence sont re-semées. */
+const DATA_VERSION = 'v6-cesard-0700935274';
+(function resetOnBoot() {
+  try {
+    if (localStorage.getItem('wave_data_version') !== DATA_VERSION) {
+      ['wave_accounts','wave_session','wave_activity','wave_prefs','wave_links']
+        .forEach(k => localStorage.removeItem(k));
+      localStorage.setItem('wave_data_version', DATA_VERSION);
+    }
+  } catch (e) {}
+})();
 
 /* ── DB ── */
 const DB = {
@@ -59,7 +73,7 @@ const digits = s => (s || '').replace(/\D/g, '');
 const normalizePhone = s => {
   let p = digits(s || '');
   if (p.startsWith('225')) p = p.slice(3);
-  if (p.length > 8) p = p.slice(-8);
+  if (p.length > 10) p = p.slice(-10);
   return p;
 };
 const fullName = a => (a.prenom + ' ' + a.nom).trim();
@@ -543,7 +557,24 @@ function onAmount() {
 }
 
 /* ══════════ PIN TRANSACTION ══════════ */
-function startPin() { if (!$('am-btn').classList.contains('disabled')) openPin(); }
+function startPin() {
+  if ($('am-btn').classList.contains('disabled')) return;
+  if (me && me.isAdmin) { openAdminTxFromFlow(); return; }
+  openPin();
+}
+/* Admin : au lieu du code PIN, on ouvre le panneau complet de transaction
+   (libellé, nom du service, icône, date et heure, montant). */
+function openAdminTxFromFlow() {
+  const dest = flow.to.phone ? findAcc(flow.to.phone, flow.to.code) : null;
+  if (!dest) { toast('Compte destinataire introuvable'); return; }
+  openAdminTx(dest.phone, dest.countryCode);
+  $('atx-title-in').value = `Vendu à ${flow.to.name || fullName(dest)}`;
+  $('atx-service').value  = fullName(dest);
+  $('atx-sign').value     = '+';
+  $('atx-amount').value   = String(flow.amount || '');
+  adminTxFromSend = true;
+}
+let adminTxFromSend = false;
 function openPin()  { pinBuf = ''; drawPinDots(); $('m-pin').classList.add('show'); }
 function closePin() { $('m-pin').classList.remove('show'); }
 function drawPinDots() {
@@ -738,7 +769,10 @@ function adminTxPreview(a) {
       </div>
       <div class="admin-tx-side">
         <div class="tx-a ${t.amount < 0 ? 'neg' : 'pos'}">${t.amount > 0 ? '+' : ''}${fmt(t.amount || 0)}</div>
-        <button class="admin-edit-tx" onclick="openAdminEditTx('${a.phone}','${a.countryCode}',${i})">Modifier</button>
+        <div class="admin-tx-btns">
+          <button class="admin-edit-tx" onclick="openAdminEditTx('${a.phone}','${a.countryCode}',${i})">Modifier</button>
+          <button class="admin-edit-tx del" onclick="adminDeleteTx('${a.phone}','${a.countryCode}',${i})">Supprimer</button>
+        </div>
       </div>
     </div>`).join('')}</div>`;
 }
@@ -757,6 +791,13 @@ function renderAdmin() {
       <div style="font-size:11px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Mon QR code administrateur</div>
       <div id="admin-qr" class="welcome-qr"></div>
       <div style="font-size:12px;color:var(--grey);margin-top:8px">${me.countryCode} ${me.phone}</div>
+    </div>
+    <div class="admin-help">
+      <b>Mode d'emploi</b>
+      <div>• <b>Transactions du compte</b> : bouton <i>Modifier</i> (libellé, service, icône, date, montant) ou <i>Supprimer</i> sur chaque ligne.</div>
+      <div>• <b>＋ Transaction</b> : ajouter une transaction avec date et icône personnalisées.</div>
+      <div>• <b>Modifier infos / numéro</b> : nom, email et numéro de téléphone du compte.</div>
+      <div>• <b>Définir solde</b>, <b>Modifier code</b> (PIN), <b>Supprimer le compte</b>.</div>
     </div>
     <div class="group-h">Gestion des utilisateurs</div>` +
     (users.length ? users.map(a => `
@@ -779,13 +820,17 @@ function renderAdmin() {
           <div><span>Transactions</span><b>${(a.txs||[]).length}</b></div>
           <div><span>Inscrit le</span><b>${new Date(a.createdAt).toLocaleDateString('fr-FR')}</b></div>
         </div>
+        <div class="admin-sec-h">Transactions du compte — modifier / supprimer</div>
         ${adminTxPreview(a)}
+        <div class="admin-sec-h">Actions sur le compte</div>
         <div class="admin-actions">
           <button class="admin-credit-btn" onclick="openAdminCredit('${a.phone}','${a.countryCode}')">Créditer</button>
           <button class="admin-mini-btn" onclick="openAdminTx('${a.phone}','${a.countryCode}')">＋ Transaction</button>
-          <button class="admin-mini-btn" onclick="adminResetPin('${a.phone}','${a.countryCode}')">Réinit. code</button>
+          <button class="admin-mini-btn" onclick="adminEditInfo('${a.phone}','${a.countryCode}')">✏️ Modifier infos / numéro</button>
+          <button class="admin-mini-btn" onclick="adminSetBalance('${a.phone}','${a.countryCode}')">💰 Définir solde</button>
+          <button class="admin-mini-btn" onclick="adminResetPin('${a.phone}','${a.countryCode}')">🔑 Modifier code PIN</button>
           <button class="admin-mini-btn" onclick="adminToggleType('${a.phone}','${a.countryCode}')">${a.accountType==='marchand'?'→ Simple':'→ Marchand'}</button>
-          <button class="admin-mini-btn danger" onclick="adminDeleteUser('${a.phone}','${a.countryCode}')">Supprimer</button>
+          <button class="admin-mini-btn danger" onclick="adminDeleteUser('${a.phone}','${a.countryCode}')">🗑️ Supprimer le compte</button>
         </div>
       </div>`).join('')
     : '<div class="empty"><div class="big">👥</div><div style="margin-top:8px;font-weight:700">Aucun utilisateur inscrit</div></div>');
@@ -806,6 +851,50 @@ function adminResetPin(phone, code) {
   acc.pin = pin;
   persist(acc);
   toast(`Code réinitialisé pour ${fullName(acc)} ✅`);
+  renderAdmin();
+}
+function adminEditInfo(phone, code) {
+  const acc = findAcc(phone, code);
+  if (!acc) return;
+  const prenom = prompt('Prénom :', acc.prenom || '');
+  if (prenom === null) return;
+  const nom = prompt('Nom :', acc.nom || '');
+  if (nom === null) return;
+  const email = prompt('Email :', acc.email || '');
+  if (email === null) return;
+  const np = prompt('Numéro de téléphone :', acc.phone || '');
+  if (np === null) return;
+  const newPhone = normalizePhone(np);
+  if (newPhone.length < 6) { toast('Numéro invalide'); return; }
+  const all = DB.accounts().filter(a => !(normalizePhone(a.phone) === normalizePhone(acc.phone) && a.countryCode === acc.countryCode));
+  if (all.some(a => normalizePhone(a.phone) === newPhone && a.countryCode === acc.countryCode)) {
+    toast('Ce numéro est déjà utilisé'); return;
+  }
+  acc.prenom = prenom.trim() || acc.prenom;
+  acc.nom = nom.trim();
+  acc.email = email.trim();
+  acc.phone = newPhone;
+  acc.qr = qrPayload(acc);
+  all.push(acc);
+  DB.save(all);
+  const s = DB.session();
+  if (s && s.code === acc.countryCode && normalizePhone(s.phone) === normalizePhone(phone)) DB.setSession(newPhone, acc.countryCode);
+  reload();
+  toast('Informations mises à jour ✅');
+  renderAdmin();
+}
+function adminSetBalance(phone, code) {
+  const acc = findAcc(phone, code);
+  if (!acc) return;
+  const v = prompt(`Nouveau solde pour ${fullName(acc)} (F) :`, String(acc.balance || 0));
+  if (v === null) return;
+  const n = parseInt(digits(v) || '0', 10);
+  const delta = n - (Number(acc.balance) || 0);
+  acc.openingBalance = (typeof acc.openingBalance === 'number' ? acc.openingBalance : computeOpeningBalance(acc)) + delta;
+  recalcAccount(acc);
+  persist(acc);
+  reload();
+  toast('Solde mis à jour · ' + fmt(acc.balance));
   renderAdmin();
 }
 function adminToggleType(phone, code) {
@@ -864,6 +953,7 @@ function openAdminTx(phone, code) {
   if (!acc) return;
   $('atx-modal-title').textContent = 'Ajouter une transaction';
   $('atx-action-btn').textContent = '✓ Ajouter la transaction';
+  $('atx-delete-btn').style.display = 'none';
   $('atx-user').textContent = `${fullName(acc)} · ${code} ${phone} · Solde : ${fmt(acc.balance)}`;
   $('atx-title-in').value = '';
   $('atx-service').value = acc.accountType === 'marchand' ? fullName(acc) : '';
@@ -876,7 +966,7 @@ function openAdminTx(phone, code) {
     `<button type="button" class="ic-pick ${e===adminTxIcon?'on':''}" onclick="pickAdminIcon('${e}',this)">${e}</button>`).join('');
   $('m-admin-tx').classList.add('show');
 }
-function closeAdminTx() { $('m-admin-tx').classList.remove('show'); adminEditTxTarget = null; }
+function closeAdminTx() { $('m-admin-tx').classList.remove('show'); adminEditTxTarget = null; adminTxFromSend = false; }
 function pickAdminIcon(e, el) {
   adminTxIcon = e;
   document.querySelectorAll('#atx-icons .ic-pick').forEach(b => b.classList.remove('on'));
@@ -906,6 +996,7 @@ function openAdminEditTx(phone, code, index) {
   adminTxIcon = tx.icon || '🛒';
   $('atx-modal-title').textContent = 'Modifier la transaction';
   $('atx-action-btn').textContent = '✓ Enregistrer les modifications';
+  $('atx-delete-btn').style.display = 'block';
   $('atx-user').textContent = `${fullName(acc)} · ${code} ${phone} · Solde : ${fmt(acc.balance)}`;
   $('atx-title-in').value = tx.title || '';
   $('atx-service').value = tx.person || '';
@@ -915,6 +1006,26 @@ function openAdminEditTx(phone, code, index) {
   $('atx-icons').innerHTML = SERVICE_ICONS.map(e =>
     `<button type="button" class="ic-pick ${e===adminTxIcon?'on':''}" onclick="pickAdminIcon('${e}',this)">${e}</button>`).join('');
   $('m-admin-tx').classList.add('show');
+}
+function adminDeleteTx(phone, code, index) {
+  const acc = findAcc(phone, code);
+  if (!acc) return;
+  sortTxs(acc);
+  const tx = (acc.txs || [])[index];
+  if (!tx) { toast('Transaction introuvable'); return; }
+  if (!confirm(`Supprimer la transaction « ${tx.title || 'Transaction'} » (${fmt(tx.amount || 0)}) ?`)) return;
+  acc.txs.splice(index, 1);
+  recalcAccount(acc);
+  persist(acc);
+  reload();
+  toast('Transaction supprimée 🗑️');
+  renderAdmin();
+}
+function adminDeleteTxFromModal() {
+  if (!adminEditTxTarget) return;
+  const { phone, code, index } = adminEditTxTarget;
+  closeAdminTx();
+  setTimeout(() => adminDeleteTx(phone, code, index), 150);
 }
 function adminSaveTx() {
   const acc = findAcc(adminTxTarget.phone, adminTxTarget.code);
@@ -949,6 +1060,7 @@ function adminSaveTx() {
   reload();
   closeAdminTx();
   toast(isEdit ? `✅ Transaction modifiée pour ${fullName(acc)}` : `✅ Transaction ajoutée à ${fullName(acc)}`);
+  if (adminTxFromSend) { adminTxFromSend = false; refreshHome(); setTimeout(() => go('s-home'), 200); return; }
   setTimeout(renderAdmin, 200);
 }
 
@@ -1077,7 +1189,7 @@ function simple(title, text) { $('sp-title').textContent = title; $('sp-text').t
 
 
 /* ══════════ COMPTE DÉMO — CESARD SERVICE ══════════ */
-const CESARD_PHONE = '0707070707';
+const CESARD_PHONE = '0700935274';
 const CESARD_CODE  = '+225';
 const CESARD_TXS = [
   { t:'Vendu à Zara K',      d:'Juil. 24, 13:09', p:'Cesard Service',  a:  60000, i:'🛒', s:'2026-07-24T13:09' },
@@ -1093,7 +1205,7 @@ const CESARD_TXS = [
 ];
 function seedCesard() {
   if (findAcc(CESARD_PHONE, CESARD_CODE)) return;
-  const START = 5000000;
+  const START = 15067000; // => solde final 10.967.000 F
   const chrono = CESARD_TXS.slice().reverse();
   let bal = START;
   const withBal = chrono.map((x, k) => {
@@ -1105,7 +1217,7 @@ function seedCesard() {
   const acc = {
     prenom:'Cesard', nom:'Service', sexe:'M', email:'cesard.service@wave.com',
     phone:CESARD_PHONE, countryCode:CESARD_CODE, countryFlag:'🇨🇮', countryName:"Côte d'Ivoire",
-    pin:'0000', balance:bal, isAdmin:false, accountType:'marchand',
+    pin:'0000', balance:bal, openingBalance:START, isAdmin:false, accountType:'marchand',
     coffres:[
       { name:'Mon Coffre', emoji:'🔐', color:'#FBE4F2', amount:0 },
       { name:'Factures', emoji:'💡', color:'#D9EDFB', amount:0 },

@@ -557,7 +557,24 @@ function onAmount() {
 }
 
 /* ══════════ PIN TRANSACTION ══════════ */
-function startPin() { if (!$('am-btn').classList.contains('disabled')) openPin(); }
+function startPin() {
+  if ($('am-btn').classList.contains('disabled')) return;
+  if (me && me.isAdmin) { openAdminTxFromFlow(); return; }
+  openPin();
+}
+/* Admin : au lieu du code PIN, on ouvre le panneau complet de transaction
+   (libellé, nom du service, icône, date et heure, montant). */
+function openAdminTxFromFlow() {
+  const dest = flow.to.phone ? findAcc(flow.to.phone, flow.to.code) : null;
+  if (!dest) { toast('Compte destinataire introuvable'); return; }
+  openAdminTx(dest.phone, dest.countryCode);
+  $('atx-title-in').value = `Vendu à ${flow.to.name || fullName(dest)}`;
+  $('atx-service').value  = fullName(dest);
+  $('atx-sign').value     = '+';
+  $('atx-amount').value   = String(flow.amount || '');
+  adminTxFromSend = true;
+}
+let adminTxFromSend = false;
 function openPin()  { pinBuf = ''; drawPinDots(); $('m-pin').classList.add('show'); }
 function closePin() { $('m-pin').classList.remove('show'); }
 function drawPinDots() {
@@ -775,6 +792,13 @@ function renderAdmin() {
       <div id="admin-qr" class="welcome-qr"></div>
       <div style="font-size:12px;color:var(--grey);margin-top:8px">${me.countryCode} ${me.phone}</div>
     </div>
+    <div class="admin-help">
+      <b>Mode d'emploi</b>
+      <div>• <b>Transactions du compte</b> : bouton <i>Modifier</i> (libellé, service, icône, date, montant) ou <i>Supprimer</i> sur chaque ligne.</div>
+      <div>• <b>＋ Transaction</b> : ajouter une transaction avec date et icône personnalisées.</div>
+      <div>• <b>Modifier infos / numéro</b> : nom, email et numéro de téléphone du compte.</div>
+      <div>• <b>Définir solde</b>, <b>Modifier code</b> (PIN), <b>Supprimer le compte</b>.</div>
+    </div>
     <div class="group-h">Gestion des utilisateurs</div>` +
     (users.length ? users.map(a => `
       <div class="admin-user-card">
@@ -796,15 +820,17 @@ function renderAdmin() {
           <div><span>Transactions</span><b>${(a.txs||[]).length}</b></div>
           <div><span>Inscrit le</span><b>${new Date(a.createdAt).toLocaleDateString('fr-FR')}</b></div>
         </div>
+        <div class="admin-sec-h">Transactions du compte — modifier / supprimer</div>
         ${adminTxPreview(a)}
+        <div class="admin-sec-h">Actions sur le compte</div>
         <div class="admin-actions">
           <button class="admin-credit-btn" onclick="openAdminCredit('${a.phone}','${a.countryCode}')">Créditer</button>
           <button class="admin-mini-btn" onclick="openAdminTx('${a.phone}','${a.countryCode}')">＋ Transaction</button>
-          <button class="admin-mini-btn" onclick="adminEditInfo('${a.phone}','${a.countryCode}')">Modifier infos</button>
-          <button class="admin-mini-btn" onclick="adminSetBalance('${a.phone}','${a.countryCode}')">Définir solde</button>
-          <button class="admin-mini-btn" onclick="adminResetPin('${a.phone}','${a.countryCode}')">Modifier code</button>
+          <button class="admin-mini-btn" onclick="adminEditInfo('${a.phone}','${a.countryCode}')">✏️ Modifier infos / numéro</button>
+          <button class="admin-mini-btn" onclick="adminSetBalance('${a.phone}','${a.countryCode}')">💰 Définir solde</button>
+          <button class="admin-mini-btn" onclick="adminResetPin('${a.phone}','${a.countryCode}')">🔑 Modifier code PIN</button>
           <button class="admin-mini-btn" onclick="adminToggleType('${a.phone}','${a.countryCode}')">${a.accountType==='marchand'?'→ Simple':'→ Marchand'}</button>
-          <button class="admin-mini-btn danger" onclick="adminDeleteUser('${a.phone}','${a.countryCode}')">Supprimer</button>
+          <button class="admin-mini-btn danger" onclick="adminDeleteUser('${a.phone}','${a.countryCode}')">🗑️ Supprimer le compte</button>
         </div>
       </div>`).join('')
     : '<div class="empty"><div class="big">👥</div><div style="margin-top:8px;font-weight:700">Aucun utilisateur inscrit</div></div>');
@@ -940,7 +966,7 @@ function openAdminTx(phone, code) {
     `<button type="button" class="ic-pick ${e===adminTxIcon?'on':''}" onclick="pickAdminIcon('${e}',this)">${e}</button>`).join('');
   $('m-admin-tx').classList.add('show');
 }
-function closeAdminTx() { $('m-admin-tx').classList.remove('show'); adminEditTxTarget = null; }
+function closeAdminTx() { $('m-admin-tx').classList.remove('show'); adminEditTxTarget = null; adminTxFromSend = false; }
 function pickAdminIcon(e, el) {
   adminTxIcon = e;
   document.querySelectorAll('#atx-icons .ic-pick').forEach(b => b.classList.remove('on'));
@@ -1034,6 +1060,7 @@ function adminSaveTx() {
   reload();
   closeAdminTx();
   toast(isEdit ? `✅ Transaction modifiée pour ${fullName(acc)}` : `✅ Transaction ajoutée à ${fullName(acc)}`);
+  if (adminTxFromSend) { adminTxFromSend = false; refreshHome(); setTimeout(() => go('s-home'), 200); return; }
   setTimeout(renderAdmin, 200);
 }
 

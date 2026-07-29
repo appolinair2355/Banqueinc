@@ -449,6 +449,44 @@
   </div>
 </div>
 
+
+<!-- Admin ajout de transaction -->
+<div class="modal" id="m-admin-tx">
+  <div class="modal-bg" onclick="closeAdminTx()"></div>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">Ajouter une transaction</h3>
+    <div class="reg-phone-tag" id="atx-user"></div>
+    <div class="field-row">
+      <label class="label">Libellé</label>
+      <input id="atx-title-in" class="field" placeholder="Ex: Vendu à Zara K"/>
+    </div>
+    <div class="field-row">
+      <label class="label">Nom du service</label>
+      <input id="atx-service" class="field" placeholder="Ex: Cesard Service"/>
+    </div>
+    <div class="field-row">
+      <label class="label">Icône du service</label>
+      <div id="atx-icons" class="ic-grid"></div>
+    </div>
+    <div class="field-row">
+      <label class="label">Date et heure</label>
+      <input id="atx-date" class="field" type="datetime-local"/>
+    </div>
+    <div class="field-row">
+      <label class="label">Montant</label>
+      <div style="display:flex;gap:8px">
+        <select id="atx-sign" class="field" style="max-width:110px">
+          <option value="+">+ Entrée</option>
+          <option value="-">- Sortie</option>
+        </select>
+        <input id="atx-amount" class="field amount-input-sm" type="tel" placeholder="Ex: 60000"/>
+      </div>
+    </div>
+    <button class="btn" style="margin-top:18px" onclick="adminAddTx()">✓ Ajouter la transaction</button>
+  </div>
+</div>
+
 <!-- Scanner QR -->
 <div class="modal" id="m-scan">
   <div class="modal-bg" onclick="closeScanner()"></div>

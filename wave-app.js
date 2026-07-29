@@ -691,13 +691,13 @@ function renderProfile() {
 function renderAdmin() {
   reload();
   const accounts = DB.accounts();
-  const users = accounts.filter(a => !a.isAdmin);
-  const totalFunds = users.reduce((s,a) => s+a.balance, 0);
+  const users = accounts.slice().sort((x,y)=> new Date(y.createdAt||0) - new Date(x.createdAt||0));
+  const totalFunds = users.filter(a=>!a.isAdmin).reduce((s,a) => s+a.balance, 0);
   $('admin-body').innerHTML = `
     <div style="background:#fff;border-radius:16px;padding:18px;margin-bottom:16px;text-align:center">
       <div style="font-size:11px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:1px">Fonds totaux en circulation</div>
       <div style="font-size:34px;font-weight:800;color:var(--violet);margin-top:6px">${fmt(totalFunds)}</div>
-      <div style="font-size:12px;color:var(--grey);margin-top:4px">${users.length} utilisateur${users.length>1?'s':''}</div>
+      <div style="font-size:12px;color:var(--grey);margin-top:4px">${users.length} compte${users.length>1?'s':''} inscrit${users.length>1?'s':''}</div>
     </div>
     <div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:16px;text-align:center">
       <div style="font-size:11px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Mon QR code administrateur</div>
@@ -710,7 +710,7 @@ function renderAdmin() {
         <div class="admin-user-head">
           <div class="li-av" style="width:46px;height:46px;font-size:19px">${(a.prenom[0]||'?').toUpperCase()}</div>
           <div class="admin-user-info">
-            <div class="admin-user-name">${fullName(a)}</div>
+            <div class="admin-user-name">${fullName(a)}${a.isAdmin?' <span class="admin-badge-sm">ADMIN</span>':''}</div>
             <div class="admin-user-phone">${a.countryFlag||''} ${a.countryCode} ${a.phone}</div>
           </div>
           <div style="text-align:right">
@@ -721,11 +721,13 @@ function renderAdmin() {
           <div><span>Numéro d'inscription</span><b>${regNumber(a)}</b></div>
           <div><span>Email</span><b>${a.email||'—'}</b></div>
           <div><span>Sexe</span><b>${a.sexe==='M'?'Homme':a.sexe==='F'?'Femme':'—'}</b></div>
-          <div><span>Type de compte</span><b>${a.accountType==='marchand'?'Marchand':'Simple'}</b></div>
+          <div><span>Type de compte</span><b>${a.isAdmin?'Administrateur':(a.accountType==='marchand'?'Marchand':'Simple')}</b></div>
+          <div><span>Transactions</span><b>${(a.txs||[]).length}</b></div>
           <div><span>Inscrit le</span><b>${new Date(a.createdAt).toLocaleDateString('fr-FR')}</b></div>
         </div>
         <div class="admin-actions">
           <button class="admin-credit-btn" onclick="openAdminCredit('${a.phone}','${a.countryCode}')">Créditer</button>
+          <button class="admin-mini-btn" onclick="openAdminTx('${a.phone}','${a.countryCode}')">＋ Transaction</button>
           <button class="admin-mini-btn" onclick="adminResetPin('${a.phone}','${a.countryCode}')">Réinit. code</button>
           <button class="admin-mini-btn" onclick="adminToggleType('${a.phone}','${a.countryCode}')">${a.accountType==='marchand'?'→ Simple':'→ Marchand'}</button>
           <button class="admin-mini-btn danger" onclick="adminDeleteUser('${a.phone}','${a.countryCode}')">Supprimer</button>
@@ -794,6 +796,68 @@ function adminDoCredit() {
   setTimeout(renderAdmin, 200);
 }
 
+
+/* ══════════ ADMIN — AJOUT DE TRANSACTION ══════════ */
+const SERVICE_ICONS = ['🛒','💸','🏪','📱','💡','🚚','🏦','⛽','🍽️','🏥','🎓','🔧','🧾','🎁','✈️','💧','📶','🏠','👕','☕'];
+let adminTxTarget = null;
+let adminTxIcon   = '🛒';
+function openAdminTx(phone, code) {
+  adminTxTarget = { phone, code };
+  adminTxIcon = '🛒';
+  const acc = findAcc(phone, code);
+  if (!acc) return;
+  $('atx-user').textContent = `${fullName(acc)} · ${code} ${phone} · Solde : ${fmt(acc.balance)}`;
+  $('atx-title-in').value = '';
+  $('atx-service').value = acc.accountType === 'marchand' ? fullName(acc) : '';
+  $('atx-amount').value = '';
+  $('atx-sign').value = '+';
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  $('atx-date').value = d.toISOString().slice(0,16);
+  $('atx-icons').innerHTML = SERVICE_ICONS.map(e =>
+    `<button type="button" class="ic-pick ${e===adminTxIcon?'on':''}" onclick="pickAdminIcon('${e}',this)">${e}</button>`).join('');
+  $('m-admin-tx').classList.add('show');
+}
+function closeAdminTx() { $('m-admin-tx').classList.remove('show'); }
+function pickAdminIcon(e, el) {
+  adminTxIcon = e;
+  document.querySelectorAll('#atx-icons .ic-pick').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+}
+function labelFromInput(v) {
+  if (!v) return nowLabel();
+  const d = new Date(v);
+  if (isNaN(d)) return nowLabel();
+  const M = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
+  return `${M[d.getMonth()]} ${d.getDate()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function adminAddTx() {
+  const acc = findAcc(adminTxTarget.phone, adminTxTarget.code);
+  if (!acc) { toast('Utilisateur introuvable'); return; }
+  const title   = $('atx-title-in').value.trim();
+  const service = $('atx-service').value.trim();
+  const sign    = $('atx-sign').value === '-' ? -1 : 1;
+  const val     = parseInt(digits($('atx-amount').value) || '0', 10);
+  const dateRaw = $('atx-date').value;
+  if (!title) { toast('Entrez un libellé (ex : Vendu à Zara K)'); return; }
+  if (!val)   { toast('Entrez un montant'); return; }
+  const amount = sign * val;
+  acc.balance += amount;
+  const tx = {
+    icon: adminTxIcon, title, person: service || fullName(acc),
+    phone: acc.phone, code: acc.countryCode, amount,
+    date: labelFromInput(dateRaw), sortAt: dateRaw ? new Date(dateRaw).getTime() : Date.now(),
+    balanceAfter: acc.balance, ref: 'A' + Date.now().toString().slice(-8),
+    note: amount < 0 ? 'Transfert sortant' : 'Encaissement client',
+  };
+  acc.txs.unshift(tx);
+  acc.txs.sort((x, y) => (y.sortAt || 0) - (x.sortAt || 0));
+  persist(acc);
+  reload();
+  closeAdminTx();
+  toast(`✅ Transaction ajoutée à ${fullName(acc)}`);
+  setTimeout(renderAdmin, 200);
+}
 
 /* ══════════ PARAMÈTRES ══════════ */
 const LANGUAGES = [
@@ -918,6 +982,51 @@ function applyPrefs() {
 /* ══════════ DIVERS ══════════ */
 function simple(title, text) { $('sp-title').textContent = title; $('sp-text').textContent = text; go('s-simple'); }
 
+
+/* ══════════ COMPTE DÉMO — CESARD SERVICE ══════════ */
+const CESARD_PHONE = '0707070707';
+const CESARD_CODE  = '+225';
+const CESARD_TXS = [
+  { t:'Vendu à Zara K',      d:'Juil. 24, 13:09', p:'Cesard Service',  a:  60000, i:'🛒', s:'2026-07-24T13:09' },
+  { t:'Transfert à Kouassi A', d:'Juil. 23, 18:42', p:'07 01 25 48 91', a: -200000, i:'💸', s:'2026-07-23T18:42' },
+  { t:'Vendu à Koffi M',     d:'Juil. 22, 11:37', p:'Cesard Service',  a: 150000, i:'🛒', s:'2026-07-22T11:37' },
+  { t:'Transfert à Yao D',   d:'Juil. 21, 09:18', p:'05 44 87 12 63',  a:-2000000, i:'💸', s:'2026-07-21T09:18' },
+  { t:'Vendu à Konan B',     d:'Juil. 20, 16:54', p:'Cesard Service',  a:  75000, i:'🛒', s:'2026-07-20T16:54' },
+  { t:'Transfert à Adou C',  d:'Juil. 19, 08:26', p:'01 72 31 65 90',  a: -500000, i:'💸', s:'2026-07-19T08:26' },
+  { t:'Vendu à Traoré F',    d:'Juil. 18, 14:12', p:'Cesard Service',  a: 320000, i:'🛒', s:'2026-07-18T14:12' },
+  { t:'Transfert à Ouattara I', d:'Juil. 17, 19:43', p:'07 69 22 14 58', a:-850000, i:'💸', s:'2026-07-17T19:43' },
+  { t:'Vendu à Diabaté S',   d:'Juil. 16, 10:05', p:'Cesard Service',  a:  95000, i:'🛒', s:'2026-07-16T10:05' },
+  { t:'Transfert à Bamba T', d:'Juil. 15, 21:30', p:'05 05 18 73 44',  a:-1250000, i:'💸', s:'2026-07-15T21:30' },
+];
+function seedCesard() {
+  if (findAcc(CESARD_PHONE, CESARD_CODE)) return;
+  const START = 5000000;
+  const chrono = CESARD_TXS.slice().reverse();
+  let bal = START;
+  const withBal = chrono.map((x, k) => {
+    bal += x.a;
+    return { icon:x.i, title:x.t, person:x.p, phone:/^\d/.test(x.p.replace(/\s/g,'')) ? x.p.replace(/\s/g,'') : CESARD_PHONE,
+             code:CESARD_CODE, amount:x.a, date:x.d, sortAt:new Date(x.s).getTime(), balanceAfter:bal,
+             ref:'CS'+String(100000+k*7331).slice(-8), note:x.a<0?'Transfert sortant':'Encaissement client' };
+  });
+  const acc = {
+    prenom:'Cesard', nom:'Service', sexe:'M', email:'cesard.service@wave.com',
+    phone:CESARD_PHONE, countryCode:CESARD_CODE, countryFlag:'🇨🇮', countryName:"Côte d'Ivoire",
+    pin:'0000', balance:bal, isAdmin:false, accountType:'marchand',
+    coffres:[
+      { name:'Mon Coffre', emoji:'🔐', color:'#FBE4F2', amount:0 },
+      { name:'Factures', emoji:'💡', color:'#D9EDFB', amount:0 },
+      { name:'Fournisseurs', emoji:'🚚', color:'#FCEBC0', amount:0 },
+      { name:'Salaires', emoji:'💸', color:'#D8F5D9', amount:0 },
+    ],
+    txs: withBal.reverse(),
+    createdAt: new Date('2026-07-15T08:00:00').toISOString(),
+  };
+  acc.qr = qrPayload(acc);
+  persist(acc);
+}
+
 /* ══════════ LANCEMENT ══════════ */
 applyPrefs();
+seedCesard();
 init();

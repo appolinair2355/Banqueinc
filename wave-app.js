@@ -20,7 +20,7 @@ const COUNTRIES = [
 ];
 
 /* ── CONFIG ── */
-const ADMIN_PHONE   = '67924076';
+const ADMIN_PHONE   = '060606';
 const ADMIN_COUNTRY = '+225';
 const PIN_TIMEOUT   = 60 * 60 * 1000; // 1 heure en ms
 

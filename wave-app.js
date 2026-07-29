@@ -29,7 +29,7 @@ const DB = {
   accounts()    { try { return JSON.parse(localStorage.getItem('wave_accounts') || '[]'); } catch { return []; } },
   save(list)    { localStorage.setItem('wave_accounts', JSON.stringify(list)); },
   session()     { try { return JSON.parse(localStorage.getItem('wave_session') || 'null'); } catch { return null; } },
-  setSession(phone, code) { localStorage.setItem('wave_session', JSON.stringify({ phone, code })); },
+  setSession(phone, code) { localStorage.setItem('wave_session', JSON.stringify({ phone: normalizePhone(phone), code })); },
   clearSession(){ localStorage.removeItem('wave_session'); localStorage.removeItem('wave_activity'); },
   getActivity() { return parseInt(localStorage.getItem('wave_activity') || '0', 10); },
   touchActivity(){ localStorage.setItem('wave_activity', Date.now().toString()); },
@@ -45,6 +45,7 @@ let pinBuf = '';             // PIN transaction
 let pvBuf  = '';             // PIN vérification connexion
 let currentCoffreIdx = null;
 let adminCreditTarget = null;
+let adminEditTxTarget = null;
 let bannerDismissed = false;
 
 /* ── UTILS ── */
@@ -55,16 +56,26 @@ const fmt = n => (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replac
 const $ = id => document.getElementById(id);
 const balHTML = n => '<span class="bal-num">' + (n === null ? '•••••' : (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('fr-FR').replace(/[\u202f\s]/g, ' ')) + '</span><span class="bal-cur">F</span>';
 const digits = s => (s || '').replace(/\D/g, '');
+const normalizePhone = s => {
+  let p = digits(s || '');
+  if (p.startsWith('225')) p = p.slice(3);
+  if (p.length > 8) p = p.slice(-8);
+  return p;
+};
 const fullName = a => (a.prenom + ' ' + a.nom).trim();
 const nowLabel = () => {
   const d = new Date();
   const M = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
   return `${M[d.getMonth()]} ${d.getDate()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 };
-const findAcc = (phone, code) => DB.accounts().find(a => a.phone === phone && a.countryCode === code);
+const findAcc = (phone, code) => {
+  const p = normalizePhone(phone);
+  return DB.accounts().find(a => normalizePhone(a.phone) === p && a.countryCode === code);
+};
 function persist(acc) {
+  acc.phone = normalizePhone(acc.phone);
   const all = DB.accounts();
-  const i = all.findIndex(a => a.phone === acc.phone && a.countryCode === acc.countryCode);
+  const i = all.findIndex(a => normalizePhone(a.phone) === normalizePhone(acc.phone) && a.countryCode === acc.countryCode);
   if (i >= 0) all[i] = acc; else all.push(acc);
   DB.save(all);
 }
@@ -72,6 +83,30 @@ function reload() {
   const s = DB.session();
   me = s ? (findAcc(s.phone, s.code) || null) : null;
   if (me && !me.qr) { me.qr = qrPayload(me); persist(me); }
+}
+function txTime(tx) {
+  if (tx && tx.sortAt) return tx.sortAt;
+  if (tx && tx.createdAt) return new Date(tx.createdAt).getTime() || 0;
+  return 0;
+}
+function sortTxs(acc) {
+  acc.txs = (acc.txs || []).sort((x, y) => txTime(y) - txTime(x));
+}
+function computeOpeningBalance(acc) {
+  if (typeof acc.openingBalance === 'number') return acc.openingBalance;
+  const total = (acc.txs || []).reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  acc.openingBalance = (Number(acc.balance) || 0) - total;
+  return acc.openingBalance;
+}
+function recalcAccount(acc) {
+  const oldestFirst = (acc.txs || []).slice().sort((x, y) => txTime(x) - txTime(y));
+  let bal = computeOpeningBalance(acc);
+  oldestFirst.forEach(t => {
+    bal += Number(t.amount) || 0;
+    t.balanceAfter = bal;
+  });
+  acc.balance = bal;
+  sortTxs(acc);
 }
 
 /* ── NAVIGATION ── */
@@ -147,7 +182,7 @@ function updatePhoneDisplay() {
 }
 function suivant() {
   if (phoneBuf.length < 6) return;
-  const phone = phoneBuf;
+  const phone = normalizePhone(phoneBuf);
   const code  = selectedCountry ? selectedCountry.code : ADMIN_COUNTRY;
 
   // Admin direct
@@ -230,7 +265,7 @@ function signupSubmit() {
   const email  = $('su-email').value.trim();
   const pin    = digits($('su-pin').value);
   const type   = $('su-type').value;
-  const phone  = phoneBuf;
+  const phone  = normalizePhone(phoneBuf);
   const code   = selectedCountry ? selectedCountry.code : ADMIN_COUNTRY;
 
   const ok = prenom && nom && sexe && email && type && pin.length === 4 && phone.length >= 6;
@@ -471,7 +506,7 @@ function checkNewNum() {
 }
 function confirmNewNum() {
   if ($('nn-btn').classList.contains('disabled')) return;
-  const phone = digits($('nn-phone').value);
+  const phone = normalizePhone($('nn-phone').value);
   const code  = selectedCountry ? selectedCountry.code : ADMIN_COUNTRY;
   const acc   = findAcc(phone, code);
   flow = { kind: 'transfer', to: { phone, code, name: acc ? fullName(acc) : $('nn-name').value.trim() } };
@@ -536,14 +571,17 @@ function execute() {
   const icons  = { transfer:'⬇️', merchant:'🏪', withdraw:'💵', link:'🔗' };
   const labels = { transfer:`Envoi à ${flow.to.name}`, merchant:`Paiement ${flow.to.name}`, withdraw:'Retrait espèces', link:`Paiement à ${flow.to.name}` };
 
+  const stamp = Date.now();
   if (!me.isAdmin) me.balance -= total;
-  me.txs.unshift({ icon:icons[flow.kind], title:labels[flow.kind], person:flow.to.name, phone:flow.to.phone, code:flow.to.code, amount:me.isAdmin ? 0 : -total, date:nowLabel(), balanceAfter:me.balance, ref, note });
+  me.txs.unshift({ icon:icons[flow.kind], title:labels[flow.kind], person:flow.to.name, phone:flow.to.phone, code:flow.to.code, amount:me.isAdmin ? 0 : -total, date:nowLabel(), sortAt:stamp, balanceAfter:me.balance, ref, note });
+  sortTxs(me);
   persist(me);
 
   const dest = flow.to.phone ? findAcc(flow.to.phone, flow.to.code) : null;
   if (dest) {
     dest.balance += flow.amount;
-    dest.txs.unshift({ icon:'⬆️', title:`Reçu de ${fullName(me)}`, person:fullName(me), phone:me.phone, code:me.countryCode, amount:flow.amount, date:nowLabel(), balanceAfter:dest.balance, ref, note });
+    dest.txs.unshift({ icon:'⬆️', title:`Reçu de ${fullName(me)}`, person:fullName(me), phone:me.phone, code:me.countryCode, amount:flow.amount, date:nowLabel(), sortAt:stamp, balanceAfter:dest.balance, ref, note });
+    sortTxs(dest);
     persist(dest);
   }
   reload();
@@ -688,6 +726,22 @@ function renderProfile() {
 }
 
 /* ══════════ ADMIN ══════════ */
+function adminTxPreview(a) {
+  const txs = (a.txs || []).slice().sort((x, y) => txTime(y) - txTime(x));
+  if (!txs.length) return '<div class="admin-tx-empty">Aucune transaction</div>';
+  return `<div class="admin-tx-list">${txs.map((t, i) => `
+    <div class="admin-tx-row">
+      <div class="tx-ic">${t.icon || '•'}</div>
+      <div class="admin-tx-main">
+        <div class="tx-t">${t.title || 'Transaction'}</div>
+        <div class="tx-s">${t.date || ''}${t.person ? ' • ' + t.person : ''}</div>
+      </div>
+      <div class="admin-tx-side">
+        <div class="tx-a ${t.amount < 0 ? 'neg' : 'pos'}">${t.amount > 0 ? '+' : ''}${fmt(t.amount || 0)}</div>
+        <button class="admin-edit-tx" onclick="openAdminEditTx('${a.phone}','${a.countryCode}',${i})">Modifier</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
 function renderAdmin() {
   reload();
   const accounts = DB.accounts();
@@ -725,6 +779,7 @@ function renderAdmin() {
           <div><span>Transactions</span><b>${(a.txs||[]).length}</b></div>
           <div><span>Inscrit le</span><b>${new Date(a.createdAt).toLocaleDateString('fr-FR')}</b></div>
         </div>
+        ${adminTxPreview(a)}
         <div class="admin-actions">
           <button class="admin-credit-btn" onclick="openAdminCredit('${a.phone}','${a.countryCode}')">Créditer</button>
           <button class="admin-mini-btn" onclick="openAdminTx('${a.phone}','${a.countryCode}')">＋ Transaction</button>
@@ -803,9 +858,12 @@ let adminTxTarget = null;
 let adminTxIcon   = '🛒';
 function openAdminTx(phone, code) {
   adminTxTarget = { phone, code };
+  adminEditTxTarget = null;
   adminTxIcon = '🛒';
   const acc = findAcc(phone, code);
   if (!acc) return;
+  $('atx-modal-title').textContent = 'Ajouter une transaction';
+  $('atx-action-btn').textContent = '✓ Ajouter la transaction';
   $('atx-user').textContent = `${fullName(acc)} · ${code} ${phone} · Solde : ${fmt(acc.balance)}`;
   $('atx-title-in').value = '';
   $('atx-service').value = acc.accountType === 'marchand' ? fullName(acc) : '';
@@ -818,7 +876,7 @@ function openAdminTx(phone, code) {
     `<button type="button" class="ic-pick ${e===adminTxIcon?'on':''}" onclick="pickAdminIcon('${e}',this)">${e}</button>`).join('');
   $('m-admin-tx').classList.add('show');
 }
-function closeAdminTx() { $('m-admin-tx').classList.remove('show'); }
+function closeAdminTx() { $('m-admin-tx').classList.remove('show'); adminEditTxTarget = null; }
 function pickAdminIcon(e, el) {
   adminTxIcon = e;
   document.querySelectorAll('#atx-icons .ic-pick').forEach(b => b.classList.remove('on'));
@@ -831,7 +889,34 @@ function labelFromInput(v) {
   const M = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
   return `${M[d.getMonth()]} ${d.getDate()}, ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
-function adminAddTx() {
+function toDateInputValue(ms) {
+  const d = new Date(ms || Date.now());
+  if (isNaN(d)) return '';
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0,16);
+}
+function openAdminEditTx(phone, code, index) {
+  adminTxTarget = { phone, code };
+  const acc = findAcc(phone, code);
+  if (!acc) return;
+  sortTxs(acc);
+  const tx = (acc.txs || [])[index];
+  if (!tx) { toast('Transaction introuvable'); return; }
+  adminEditTxTarget = { phone, code, index };
+  adminTxIcon = tx.icon || '🛒';
+  $('atx-modal-title').textContent = 'Modifier la transaction';
+  $('atx-action-btn').textContent = '✓ Enregistrer les modifications';
+  $('atx-user').textContent = `${fullName(acc)} · ${code} ${phone} · Solde : ${fmt(acc.balance)}`;
+  $('atx-title-in').value = tx.title || '';
+  $('atx-service').value = tx.person || '';
+  $('atx-sign').value = (tx.amount || 0) < 0 ? '-' : '+';
+  $('atx-amount').value = String(Math.abs(tx.amount || 0));
+  $('atx-date').value = toDateInputValue(txTime(tx));
+  $('atx-icons').innerHTML = SERVICE_ICONS.map(e =>
+    `<button type="button" class="ic-pick ${e===adminTxIcon?'on':''}" onclick="pickAdminIcon('${e}',this)">${e}</button>`).join('');
+  $('m-admin-tx').classList.add('show');
+}
+function adminSaveTx() {
   const acc = findAcc(adminTxTarget.phone, adminTxTarget.code);
   if (!acc) { toast('Utilisateur introuvable'); return; }
   const title   = $('atx-title-in').value.trim();
@@ -842,7 +927,7 @@ function adminAddTx() {
   if (!title) { toast('Entrez un libellé (ex : Vendu à Zara K)'); return; }
   if (!val)   { toast('Entrez un montant'); return; }
   const amount = sign * val;
-  acc.balance += amount;
+  computeOpeningBalance(acc);
   const tx = {
     icon: adminTxIcon, title, person: service || fullName(acc),
     phone: acc.phone, code: acc.countryCode, amount,
@@ -850,12 +935,20 @@ function adminAddTx() {
     balanceAfter: acc.balance, ref: 'A' + Date.now().toString().slice(-8),
     note: amount < 0 ? 'Transfert sortant' : 'Encaissement client',
   };
-  acc.txs.unshift(tx);
-  acc.txs.sort((x, y) => (y.sortAt || 0) - (x.sortAt || 0));
+  const isEdit = !!adminEditTxTarget;
+  if (isEdit) {
+    sortTxs(acc);
+    const old = acc.txs[adminEditTxTarget.index];
+    if (!old) { toast('Transaction introuvable'); return; }
+    Object.assign(old, tx, { ref: old.ref || tx.ref });
+  } else {
+    acc.txs.unshift(tx);
+  }
+  recalcAccount(acc);
   persist(acc);
   reload();
   closeAdminTx();
-  toast(`✅ Transaction ajoutée à ${fullName(acc)}`);
+  toast(isEdit ? `✅ Transaction modifiée pour ${fullName(acc)}` : `✅ Transaction ajoutée à ${fullName(acc)}`);
   setTimeout(renderAdmin, 200);
 }
 

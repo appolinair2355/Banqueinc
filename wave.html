@@ -455,7 +455,7 @@
   <div class="modal-bg" onclick="closeAdminTx()"></div>
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h3 class="sheet-title">Ajouter une transaction</h3>
+    <h3 class="sheet-title" id="atx-modal-title">Ajouter une transaction</h3>
     <div class="reg-phone-tag" id="atx-user"></div>
     <div class="field-row">
       <label class="label">Libellé</label>
@@ -483,7 +483,7 @@
         <input id="atx-amount" class="field amount-input-sm" type="tel" placeholder="Ex: 60000"/>
       </div>
     </div>
-    <button class="btn" style="margin-top:18px" onclick="adminAddTx()">✓ Ajouter la transaction</button>
+    <button class="btn" id="atx-action-btn" style="margin-top:18px" onclick="adminSaveTx()">✓ Ajouter la transaction</button>
   </div>
 </div>
 

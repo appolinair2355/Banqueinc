@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>Wafacash — Émission Cash Express</title>
+<meta name="theme-color" content="#00A651"/>
+<link rel="icon" href="favicon.ico"/>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f4f6f8;color:#123B28}
+  header{background:linear-gradient(135deg,#00A651,#00753A);color:#fff;padding:18px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:5}
+  header img{height:34px;background:#fff;border-radius:6px;padding:4px}
+  header h1{margin:0;font-size:17px;font-weight:700}
+  header small{display:block;opacity:.9;font-size:12px}
+  .back{margin-left:auto;color:#fff;text-decoration:none;font-size:22px;padding:4px 10px;border-radius:8px;background:rgba(0,0,0,.15)}
+  main{max-width:720px;margin:0 auto;padding:14px}
+  .card{background:#fff;border-radius:14px;padding:14px 14px 4px;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  .card h2{margin:0 0 10px;font-size:14px;color:#00753A;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #E7F7EE;padding-bottom:6px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row.one{grid-template-columns:1fr}
+  .field{margin-bottom:10px}
+  label{display:block;font-size:12px;color:#4a5b52;margin-bottom:4px;font-weight:600}
+  input,select,textarea{width:100%;border:1px solid #d5dbd7;border-radius:10px;padding:10px 12px;font-size:15px;background:#fff;color:#123B28;font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#00A651;box-shadow:0 0 0 3px #E7F7EE}
+  textarea{min-height:70px;resize:vertical}
+  .check{display:flex;align-items:center;gap:8px;font-size:14px;margin:6px 0}
+  .check input{width:auto}
+  .amounts{background:#F7FBF8;border:1px dashed #b7d7c4;border-radius:10px;padding:10px;margin-top:6px}
+  .amounts .line{display:flex;justify-content:space-between;padding:4px 0;font-size:14px}
+  .amounts .total{border-top:1px solid #b7d7c4;margin-top:6px;padding-top:8px;font-weight:800;font-size:16px;color:#00753A}
+  .actions{display:flex;gap:10px;padding:6px 0 20px}
+  button{flex:1;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer}
+  .btn-primary{background:linear-gradient(135deg,#00A651,#00753A);color:#fff}
+  .btn-ghost{background:#fff;color:#00753A;border:1px solid #00A651}
+  .err{color:#b00020;font-size:12px;margin-top:4px;display:none}
+  .err.on{display:block}
+</style>
+</head>
+<body>
+<header>
+  <img src="wafacash.png" alt="Wafacash"/>
+  <div>
+    <h1>Cash Express</h1>
+    <small>Émission — Reçu Client</small>
+  </div>
+  <a class="back" href="/wafacash" aria-label="Retour">×</a>
+</header>
+
+<main>
+  <form id="f" novalidate>
+    <section class="card">
+      <h2>En-tête</h2>
+      <div class="row">
+        <div class="field"><label>Agence</label><input name="agence" value="CASA MAZOLA (AFN)(2811) - AFN0120"/></div>
+        <div class="field"><label>N° de transfert</label><input name="ntransfert" placeholder="240 367 734 240"/></div>
+        <div class="field"><label>Réf. entreprise</label><input name="ref"/></div>
+        <div class="field"><label>Date</label><input name="date" type="date"/></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Expéditeur</h2>
+      <div class="row">
+        <div class="field"><label>Nom / Prénom *</label><input name="exp_nom" required/><div class="err">Requis</div></div>
+        <div class="field"><label>Ville</label><input name="exp_ville"/></div>
+        <div class="field"><label>Téléphone</label><input name="exp_tel" inputmode="tel"/></div>
+        <div class="field"><label>Type de pièce</label>
+          <select name="exp_type"><option>CIN</option><option>Passeport</option><option>Permis</option><option>Carte séjour</option></select>
+        </div>
+        <div class="field"><label>N° pièce (PID N°)</label><input name="exp_pid"/></div>
+        <div class="field"><label>Date d'expiration (PID Exp.)</label><input name="exp_pidexp" type="date"/></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Bénéficiaire</h2>
+      <div class="row">
+        <div class="field"><label>Nom / Prénom *</label><input name="ben_nom" required/><div class="err">Requis</div></div>
+        <div class="field"><label>Ville</label><input name="ben_ville"/></div>
+        <div class="field"><label>Téléphone</label><input name="ben_tel" inputmode="tel"/></div>
+        <div class="field"><label>Type de pièce</label>
+          <select name="ben_type"><option value=""></option><option>CIN</option><option>Passeport</option><option>Permis</option><option>Carte séjour</option></select>
+        </div>
+        <div class="field"><label>N° pièce (PID N°)</label><input name="ben_pid"/></div>
+        <div class="field"><label>Date d'expiration (PID Exp.)</label><input name="ben_pidexp" type="date"/></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Notifications (optionnel)</h2>
+      <label class="check"><input type="checkbox" name="sms_ben"/> SMS Bénéficiaire</label>
+      <label class="check"><input type="checkbox" name="sms_exp"/> SMS Expéditeur</label>
+    </section>
+
+    <section class="card">
+      <h2>Raison</h2>
+      <div class="field row one"><label>Motif du transfert</label>
+        <textarea name="raison" placeholder="Ex : je peux payer mes impôts…"></textarea>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Montant</h2>
+      <div class="row">
+        <div class="field"><label>Montant envoyé (MAD) *</label>
+          <input name="montant" type="number" step="0.01" min="0" required oninput="calc()"/>
+          <div class="err">Requis</div>
+        </div>
+        <div class="field"><label>Total frais HT (MAD)</label>
+          <input name="frais" type="number" step="0.01" min="0" value="74.74" oninput="calc()"/>
+        </div>
+      </div>
+      <div class="amounts">
+        <div class="line"><span>Montant envoyé</span><b id="a-envoye">0,00 MAD</b></div>
+        <div class="line"><span>Total frais HT (*)</span><b id="a-frais">0,00 MAD</b></div>
+        <div class="line"><span>TVA (10%) (**)</span><b id="a-tva">0,00 MAD</b></div>
+        <div class="line total"><span>Total à payer</span><b id="a-total">0,00 MAD</b></div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button type="button" class="btn-ghost" onclick="history.back()">Annuler</button>
+      <button type="submit" class="btn-primary">Valider</button>
+    </div>
+  </form>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const f = document.getElementById('f');
+
+function fmt(n){
+  n = Number(n)||0;
+  const [i,d]=n.toFixed(2).split('.');
+  const withSep=i.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  return withSep+','+d+' MAD';
+}
+function calc(){
+  const m = Number(f.montant.value)||0;
+  const fr = Number(f.frais.value)||0;
+  const tva = +(fr*0.10).toFixed(2);
+  const total = +(m + fr + tva).toFixed(2);
+  $('#a-envoye').textContent = fmt(m);
+  $('#a-frais').textContent = fmt(fr);
+  $('#a-tva').textContent = fmt(tva);
+  $('#a-total').textContent = fmt(total);
+  return {m, fr, tva, total};
+}
+// init date to today
+f.date.value = new Date().toISOString().slice(0,10);
+// generate a transfer number if empty on focus
+// auto-gen removed
+calc();
+
+function frDate(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+f.addEventListener('submit', e => {
+  e.preventDefault();
+  let ok = true;
+  ['exp_nom','ben_nom','montant'].forEach(k=>{
+    const el = f[k]; const err = el.parentElement.querySelector('.err');
+    if(!el.value.trim()){ err.classList.add('on'); ok=false; } else err.classList.remove('on');
+  });
+  if(!ok){ window.scrollTo({top:0,behavior:'smooth'}); return; }
+  const totals = calc();
+  buildPDF(totals);
+});
+
+function buildPDF(t){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'a4', orientation:'landscape'});
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const g = f;
+  // Colors
+  const green=[0,0,0], dark=[0,0,0], grey=[0,0,0], line=[0,0,0];
+
+  // Top logos row
+  doc.setTextColor(...green); doc.setFont('helvetica','bold'); doc.setFontSize(18);
+  doc.text('Wafacash', 12, 15);
+  doc.setFontSize(9); doc.setTextColor(...grey); doc.setFont('helvetica','normal');
+  doc.text('Groupe Attijariwafa bank', 12, 20);
+  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(...dark);
+  doc.text('EMISSION CASH EXPRESS', 12, 28);
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(...dark);
+  doc.text('Cash', W-40, 15); doc.setTextColor(...green); doc.text('Xpress', W-25, 15);
+
+  // Agence / N° transfert / Date
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...dark);
+  doc.text(`Agence     : ${g.agence.value}`, 12, 36);
+  doc.text('Reçu Client', W/2 - 10, 36);
+  doc.setFont('helvetica','bold');
+  doc.text(`N°TRANSFERT :  ${g.ntransfert.value}`, W-95, 26);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text(`REF.ENTREPRISE : ${g.ref.value||''}`, W-95, 32);
+  doc.setFont('helvetica','bold'); doc.setFontSize(10);
+  doc.text(`DATE :  ${frDate(g.date.value)}`, W-95, 38);
+
+  // Separator line under header
+  doc.setDrawColor(...line); doc.setLineWidth(0.3);
+  doc.line(10, 42, W-10, 42);
+
+  // Two boxes: Expéditeur / Bénéficiaire
+  const boxY = 46, boxH = 44, colW = (W-30)/2;
+  function box(x, title, data){
+    doc.setDrawColor(...line); doc.setLineWidth(0.4);
+    doc.rect(x, boxY, colW, boxH);
+    doc.line(x, boxY+6, x+colW, boxY+6);
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(...dark);
+    doc.text(title, x+2, boxY+4.3);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+    let y = boxY + 11;
+    const col2x = x + colW*0.62;
+    // Row 1: Nom / Tél
+    doc.text('Nom / Prénom  :', x+2, y); doc.setFont('helvetica','bold'); doc.text(data.nom||'', x+34, y);
+    doc.setFont('helvetica','normal'); doc.text('Tél :', col2x, y); doc.text(data.tel||'', col2x+10, y);
+    y += 7;
+    doc.text('Ville         :', x+2, y); doc.text(data.ville||'', x+34, y);
+    y += 7;
+    doc.text('Type pièce    :', x+2, y); doc.text(data.type||'', x+34, y);
+    y += 7;
+    doc.text('PID N°        :', x+2, y); doc.text(data.pid||'', x+34, y);
+    doc.text('PID Exp :', col2x, y); doc.text(frDate(data.pidexp), col2x+18, y);
+  }
+  box(10, 'EXPEDITEUR', {
+    nom:g.exp_nom.value, ville:g.exp_ville.value, tel:g.exp_tel.value,
+    type:g.exp_type.value, pid:g.exp_pid.value, pidexp:g.exp_pidexp.value
+  });
+  box(10+colW+10, 'BENEFICIAIRE', {
+    nom:g.ben_nom.value, ville:g.ben_ville.value, tel:g.ben_tel.value,
+    type:g.ben_type.value, pid:g.ben_pid.value, pidexp:g.ben_pidexp.value
+  });
+
+  // Amounts panel (right) and notifications+reason (left)
+  const y2 = boxY + boxH + 4;
+  const leftW = colW, rightW = colW;
+  doc.setDrawColor(...line);
+  doc.rect(10, y2, leftW, 40);
+  doc.line(10, y2+6, 10+leftW, y2+6);
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.text('Notifications', 12, y2+4.3);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+  const chk = (v)=> v ? '[x]' : '[ ]';
+  doc.text(`${chk(g.sms_ben.checked)} Bénéficiaire (SMS)`, 12, y2+12);
+  doc.text('Frais SMS HT :  0,00', 70, y2+12);
+  doc.text(`${chk(g.sms_exp.checked)} Expéditeur (SMS)`, 12, y2+19);
+  doc.text('Tva SMS (20%) :  0,00', 70, y2+19);
+  doc.setFont('helvetica','bold'); doc.text('Raison :', 12, y2+28);
+  doc.setFont('helvetica','normal');
+  const raison = doc.splitTextToSize(g.raison.value||'', leftW-6);
+  doc.text(raison, 12, y2+34);
+
+  // Amounts right
+  const xr = 10+leftW+10;
+  doc.rect(xr, y2, rightW, 40);
+  doc.setFont('helvetica','normal'); doc.setFontSize(11);
+  let ry = y2+9;
+  const rline = (label, val, bold=false) => {
+    doc.setFont('helvetica', bold?'bold':'normal');
+    doc.text(label, xr+3, ry);
+    doc.text(val, xr+rightW-3, ry, {align:'right'});
+    ry += 8;
+  };
+  rline('Montant envoyé :', fmt(t.m));
+  rline('Total Frais HT (*) :', fmt(t.fr));
+  rline('TVA (10%) (**) :', fmt(t.tva));
+  doc.setDrawColor(...dark); doc.line(xr+2, ry-3, xr+rightW-2, ry-3);
+  rline('Total à payer', fmt(t.total), true);
+
+  // Signatures
+  const y3 = y2 + 44;
+  doc.rect(10, y3, leftW, 22);
+  doc.rect(xr, y3, rightW, 22);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text("Signature du client (*)", 12, y3+5);
+  doc.text("Signature et cachet de l'agence", xr+3, y3+5);
+
+  // Footer note
+  doc.setFontSize(8); doc.setTextColor(...grey);
+  doc.text("Veuillez conserver ce reçu jusqu'au paiement du bénéficiaire", 10, y3+28);
+  doc.text('WAFACASH VOUS REMERCIE POUR VOTRE CONFIANCE', W-10, y3+28, {align:'right'});
+  doc.setFontSize(7);
+  doc.text("(**) Y compris les droits de timbre", 10, y3+33);
+  doc.text('LES CONDITIONS GENERALES AYANT TRAIT AUX SERVICES DU CASH EXPRESS SONT DISPONIBLES DANS VOTRE AGENCE.', 10, y3+38);
+
+  const name = `cash-express-${(g.ntransfert.value||'recu').replace(/\s+/g,'')}.pdf`;
+  doc.save(name);
+}
+</script>
+</body>
+</html>

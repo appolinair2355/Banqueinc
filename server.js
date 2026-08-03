@@ -14,6 +14,7 @@ const routes = {
   '/cih':       'cih.html',
   '/wafacash':  'wafacash.html',
   '/wave':      'wave.html',
+  '/cash-express': 'cash-express.html',
 };
 for (const [url, file] of Object.entries(routes)) {
   app.get(url, (_req, res) => res.sendFile(path.join(ROOT, file)));

@@ -515,6 +515,7 @@ function runAction(a) {
     case 'history':  history_(); break;
     case 'admin':    admin(); break;
     case 'service':  openService(a); break;
+    case 'link':     if (a.url) location.href = a.url; break;
     default: toast('Service bientôt disponible');
   }
 }

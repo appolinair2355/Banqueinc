@@ -70,38 +70,40 @@
       <h2>En-tête</h2>
       <div class="row">
         <div class="field"><label>Agence</label><input name="agence" value="CASA MAZOLA (AFN)(2811) - AFN0120"/></div>
-        <div class="field"><label>N° de transfert</label><input name="ntransfert" placeholder="240 367 734 240"/></div>
-        <div class="field"><label>Réf. entreprise</label><input name="ref"/></div>
-        <div class="field"><label>Date</label><input name="date" type="date"/></div>
-        <div class="field"><label>Heure</label><input name="heure" type="time"/></div>
+        <div class="field"><label>N° de transfert</label><input name="ntransfert" value="240 367 734 240"/></div>
+        <div class="field"><label>Réf. entreprise</label><input name="ref" value=""/></div>
+        <div class="field"><label>Date</label><input name="date" type="date" value="2019-07-17"/></div>
+        <div class="field"><label>Heure</label><input name="heure" type="time" value="12:08"/></div>
+
       </div>
     </section>
 
     <section class="card">
       <h2>Expéditeur</h2>
       <div class="row">
-        <div class="field"><label>Nom / Prénom *</label><input name="exp_nom" required/><div class="err">Requis</div></div>
-        <div class="field"><label>Ville</label><input name="exp_ville"/></div>
-        <div class="field"><label>Téléphone</label><input name="exp_tel" inputmode="tel"/></div>
+        <div class="field"><label>Nom / Prénom *</label><input name="exp_nom" value="HERRATI MEHDI" required/><div class="err">Requis</div></div>
+        <div class="field"><label>Ville</label><input name="exp_ville" value="CASA SUD"/></div>
+        <div class="field"><label>Téléphone</label><input name="exp_tel" value="" inputmode="tel"/></div>
         <div class="field"><label>Type de pièce</label>
           <select name="exp_type"><option>CIN</option><option>Passeport</option><option>Permis</option><option>Carte séjour</option></select>
         </div>
-        <div class="field"><label>N° pièce (PID N°)</label><input name="exp_pid"/></div>
-        <div class="field"><label>Date d'expiration (PID Exp.)</label><input name="exp_pidexp" type="date"/></div>
+        <div class="field"><label>N° pièce (PID N°)</label><input name="exp_pid" value="BK214186"/></div>
+        <div class="field"><label>Date d'expiration (PID Exp.)</label><input name="exp_pidexp" type="date" value="2021-11-10"/></div>
       </div>
     </section>
 
     <section class="card">
       <h2>Bénéficiaire</h2>
       <div class="row">
-        <div class="field"><label>Nom / Prénom *</label><input name="ben_nom" required/><div class="err">Requis</div></div>
-        <div class="field"><label>Ville</label><input name="ben_ville"/></div>
-        <div class="field"><label>Téléphone</label><input name="ben_tel" inputmode="tel"/></div>
+        <div class="field"><label>Nom / Prénom *</label><input name="ben_nom" value="LACHGAR REDOUANE" required/><div class="err">Requis</div></div>
+        <div class="field"><label>Ville</label><input name="ben_ville" value="CASA NORD"/></div>
+        <div class="field"><label>Téléphone</label><input name="ben_tel" value="" inputmode="tel"/></div>
         <div class="field"><label>Type de pièce</label>
-          <select name="ben_type"><option value=""></option><option>CIN</option><option>Passeport</option><option>Permis</option><option>Carte séjour</option></select>
+          <select name="ben_type"><option value="" selected></option><option>CIN</option><option>Passeport</option><option>Permis</option><option>Carte séjour</option></select>
         </div>
-        <div class="field"><label>N° pièce (PID N°)</label><input name="ben_pid"/></div>
-        <div class="field"><label>Date d'expiration (PID Exp.)</label><input name="ben_pidexp" type="date"/></div>
+        <div class="field"><label>N° pièce (PID N°)</label><input name="ben_pid" value=""/></div>
+        <div class="field"><label>Date d'expiration (PID Exp.)</label><input name="ben_pidexp" type="date" value=""/></div>
+
       </div>
     </section>
 
@@ -123,7 +125,8 @@
       <h2>Montant</h2>
       <div class="row">
         <div class="field"><label>Montant envoyé (MAD) *</label>
-          <input name="montant" type="number" step="0.01" min="0" required oninput="calc()"/>
+          <input name="montant" type="number" step="0.01" min="0" value="12270" required oninput="calc()"/>
+
           <div class="err">Requis</div>
         </div>
         <div class="field"><label>Total frais HT (MAD)</label>
@@ -192,9 +195,8 @@ function calc(){
   $('#a-total').textContent = fmt(total);
   return {m, fr, tva, total};
 }
-const now = new Date();
-f.date.value = now.toISOString().slice(0,10);
-f.heure.value = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+/* date et heure telles que sur le reçu d'origine (préremplies dans le formulaire) */
+
 calc();
 
 function frDate(iso){
@@ -311,6 +313,19 @@ async function logo(){
   }catch(e){ LOGO = ''; }
   return LOGO;
 }
+
+/* signatures manuscrites bleues (extraites du reçu d'origine) */
+const IMG_CACHE = {};
+async function png(url){
+  if(url in IMG_CACHE) return IMG_CACHE[url];
+  try{
+    const blob = await (await fetch(url)).blob();
+    IMG_CACHE[url] = await new Promise(r=>{ const fr = new FileReader(); fr.onload=()=>r(fr.result); fr.onerror=()=>r(''); fr.readAsDataURL(blob); });
+  }catch(e){ IMG_CACHE[url] = ''; }
+  return IMG_CACHE[url];
+}
+
+
 
 f.addEventListener('submit', async e => {
   e.preventDefault();
@@ -531,6 +546,19 @@ async function buildPDF(t){
   doc.setFontSize(8.5);
   doc.text('Signature du client (*)', xR+3, y3+5);
   doc.text("Signature et cachet de l'agence", xR+colW/2+3, y3+5);
+
+  /* signatures manuscrites bleues, comme sur le reçu d'origine */
+  const sigC = await png('sig_client.png');
+  if(sigC){
+    const w = 50, h = w * 58/89;
+    try{ doc.addImage(sigC, 'PNG', xR + 8, y3 + 0.5, w, h); }catch(e){}
+  }
+  const sigA = await png('sig_agence.png');
+  if(sigA){
+    const w = 72, h = w * 53/184;
+    try{ doc.addImage(sigA, 'PNG', xR + colW/2 - 4, y3 + 7, w, h); }catch(e){}
+  }
+
 
   /* ---------- PIED DE PAGE ---------- */
   const y4 = y3 + bH + 6;                        // ~160

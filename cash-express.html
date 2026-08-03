@@ -172,124 +172,195 @@ f.addEventListener('submit', e => {
   buildPDF(totals);
 });
 
-function buildPDF(t){
+/* ---------- Rendu du texte ARABE ----------
+   jsPDF (polices standard) ne sait pas écrire l'arabe (pas de liaison des
+   lettres ni de sens RTL). On laisse donc le navigateur composer le texte
+   arabe dans un SVG, on le convertit en image PNG, puis on l'insère dans le
+   PDF aux coordonnées exactes. Le rendu est donc identique au modèle papier. */
+const AR_CACHE = new Map();
+function arRender(text, px, bold){
+  const key = px+'|'+(bold?1:0)+'|'+text;
+  if(AR_CACHE.has(key)) return AR_CACHE.get(key);
+  const p = new Promise(res=>{
+    const w = Math.ceil(px*text.length*0.85)+24, h = Math.ceil(px*1.7);
+    const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'+
+      '<foreignObject width="100%" height="100%">'+
+      '<div xmlns="http://www.w3.org/1999/xhtml" dir="rtl" lang="ar" style="margin:0;'+
+      'font-family:\'Noto Naskh Arabic\',\'Amiri\',\'Traditional Arabic\',\'Geeza Pro\',\'Segoe UI\',sans-serif;'+
+      'font-size:'+px+'px;font-weight:'+(bold?'700':'400')+';color:#000;line-height:'+Math.round(px*1.5)+'px;'+
+      'text-align:right;white-space:nowrap">'+esc+'</div></foreignObject></svg>';
+    const img = new Image();
+    img.onload = ()=>{
+      const c = document.createElement('canvas');
+      c.width = w*3; c.height = h*3;
+      const x = c.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0,0,c.width,c.height);
+      x.scale(3,3); x.drawImage(img,0,0);
+      res({url:c.toDataURL('image/png'), ratio:w/h});
+    };
+    img.onerror = ()=>res(null);
+    img.src = 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  });
+  AR_CACHE.set(key,p);
+  return p;
+}
+// place une image arabe : hmm = hauteur en mm, align 'right' | 'left'
+async function arPut(doc, text, x, y, hmm, align, bold){
+  const im = await arRender(text, 40, bold);
+  if(!im) return;
+  const wmm = hmm * im.ratio;
+  const px = align === 'right' ? x - wmm : x;
+  doc.addImage(im.url, 'PNG', px, y, wmm, hmm);
+}
+
+async function buildPDF(t){
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({unit:'mm', format:'a4', orientation:'landscape'});
-  const W = doc.internal.pageSize.getWidth();
-  const H = doc.internal.pageSize.getHeight();
+  const doc = new jsPDF({unit:'mm', format:[297,172], orientation:'landscape'});
+  const W = doc.internal.pageSize.getWidth();   // 297
   const g = f;
-  // Colors
-  const green=[0,0,0], dark=[0,0,0], grey=[0,0,0], line=[0,0,0];
+  const M = 10;
+  const colW = (W - 2*M - 8) / 2;               // largeur d'une colonne
+  const xL = M, xR = M + colW + 8;
+  const K = [0,0,0];
+  doc.setTextColor(...K); doc.setDrawColor(...K);
 
-  // Top logos row
-  doc.setTextColor(...green); doc.setFont('helvetica','bold'); doc.setFontSize(18);
-  doc.text('Wafacash', 12, 15);
-  doc.setFontSize(9); doc.setTextColor(...grey); doc.setFont('helvetica','normal');
-  doc.text('Groupe Attijariwafa bank', 12, 20);
-  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(...dark);
-  doc.text('EMISSION CASH EXPRESS', 12, 28);
+  // ---------- EN-TETE ----------
+  doc.setFont('helvetica','bold'); doc.setFontSize(16);
+  doc.text('Wafacash', xL+2, 14);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7);
+  doc.text('Groupe Attijariwafa bank', xL+2, 18);
+  await arPut(doc, 'وفاكاش', xL+2, 19.5, 5, 'left', true);
+  doc.setFont('helvetica','bold'); doc.setFontSize(16);
+  doc.text('Cash  Xpress', W-M-2, 14, {align:'right'});
+  await arPut(doc, 'كاش إكسبريس', W-M-2, 15.5, 5, 'right', true);
 
-  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(...dark);
-  doc.text('Cash', W-40, 15); doc.setTextColor(...green); doc.text('Xpress', W-25, 15);
+  doc.setFontSize(13);
+  doc.text('EMISSION CASH EXPRESS', xL+2, 28);
+  await arPut(doc, 'إصدار كاش إكسبريس', xL+2, 29.5, 5.2, 'left', true);
 
-  // Agence / N° transfert / Date
-  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...dark);
-  doc.text(`Agence     : ${g.agence.value}`, 12, 36);
-  doc.text('Reçu Client', W/2 - 10, 36);
-  doc.setFont('helvetica','bold');
-  doc.text(`N°TRANSFERT :  ${g.ntransfert.value}`, W-95, 26);
   doc.setFont('helvetica','normal'); doc.setFontSize(9);
-  doc.text(`REF.ENTREPRISE : ${g.ref.value||''}`, W-95, 32);
+  doc.text('Agence     : ' + (g.agence.value||''), xL+2, 38);
   doc.setFont('helvetica','bold'); doc.setFontSize(10);
-  doc.text(`DATE :  ${frDate(g.date.value)}`, W-95, 38);
+  doc.text('Reçu Client', 150, 30);
+  await arPut(doc, 'وصل الزبون', 150, 31.5, 4.6, 'left', true);
 
-  // Separator line under header
-  doc.setDrawColor(...line); doc.setLineWidth(0.3);
-  doc.line(10, 42, W-10, 42);
+  const xh = 190;
+  doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text('N°TRANSFERT :   ' + (g.ntransfert.value||''), xh, 24);
+  await arPut(doc, 'رقم التحويل', W-M-2, 25, 4.2, 'right');
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('REF.ENTREPRISE : ' + (g.ref.value||''), xh, 31);
+  await arPut(doc, 'مرجع المؤسسة', W-M-2, 32, 4.2, 'right');
+  doc.setFont('helvetica','bold'); doc.setFontSize(10);
+  doc.text('DATE :   ' + frDate(g.date.value), xh, 38);
+  await arPut(doc, 'التاريخ', W-M-2, 39, 4.2, 'right');
 
-  // Two boxes: Expéditeur / Bénéficiaire
-  const boxY = 46, boxH = 44, colW = (W-30)/2;
-  function box(x, title, data){
-    doc.setDrawColor(...line); doc.setLineWidth(0.4);
+  doc.setLineWidth(0.4);
+  doc.line(M, 43, W-M, 43);
+
+  // ---------- CADRES EXPEDITEUR / BENEFICIAIRE ----------
+  const boxY = 53, rowH = 8.5, boxH = rowH*4;
+  async function party(x, title, titleAr, d){
+    doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    doc.text(title, x+2, boxY-2);
+    const tw = doc.getTextWidth(title);
+    doc.setLineWidth(0.5); doc.line(x+2, boxY-1, x+2+tw, boxY-1);
+    await arPut(doc, titleAr, x+colW, boxY-5.2, 4.6, 'right', true);
+
+    doc.setLineWidth(0.3);
     doc.rect(x, boxY, colW, boxH);
-    doc.line(x, boxY+6, x+colW, boxY+6);
-    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(...dark);
-    doc.text(title, x+2, boxY+4.3);
-    doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
-    let y = boxY + 11;
-    const col2x = x + colW*0.62;
-    // Row 1: Nom / Tél
-    doc.text('Nom / Prénom  :', x+2, y); doc.setFont('helvetica','bold'); doc.text(data.nom||'', x+34, y);
-    doc.setFont('helvetica','normal'); doc.text('Tél :', col2x, y); doc.text(data.tel||'', col2x+10, y);
-    y += 7;
-    doc.text('Ville         :', x+2, y); doc.text(data.ville||'', x+34, y);
-    y += 7;
-    doc.text('Type pièce    :', x+2, y); doc.text(data.type||'', x+34, y);
-    y += 7;
-    doc.text('PID N°        :', x+2, y); doc.text(data.pid||'', x+34, y);
-    doc.text('PID Exp :', col2x, y); doc.text(frDate(data.pidexp), col2x+18, y);
+    for(let i=1;i<4;i++) doc.line(x, boxY+i*rowH, x+colW, boxY+i*rowH);
+    const xs = x + colW*0.62;                  // séparation colonne droite
+    doc.line(xs, boxY+rowH, xs, boxY+2*rowH);  // Ville | Tél
+    doc.line(xs, boxY+3*rowH, xs, boxY+4*rowH);// PID N° | PID Exp
+
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    const lab = (txt,cx,r)=>doc.text(txt, cx+2, boxY+r*rowH+5.6);
+    const val = (txt,cx,r)=>{doc.setFont('helvetica','bold');doc.text(txt||'', cx, boxY+r*rowH+5.6);doc.setFont('helvetica','normal');};
+    lab('Nom / Prénom  :', x, 0);   val(d.nom,  x+34, 0);
+    lab('Ville         :', x, 1);   val(d.ville,x+34, 1);
+    lab('Tél :', xs, 1);            val(d.tel,  xs+12, 1);
+    lab('Type pièce    :', x, 2);   val(d.type, x+34, 2);
+    lab('PID N°        :', x, 3);   val(d.pid,  x+34, 3);
+    lab('PID Exp :', xs, 3);        val(frDate(d.pidexp), xs+20, 3);
   }
-  box(10, 'EXPEDITEUR', {
-    nom:g.exp_nom.value, ville:g.exp_ville.value, tel:g.exp_tel.value,
-    type:g.exp_type.value, pid:g.exp_pid.value, pidexp:g.exp_pidexp.value
-  });
-  box(10+colW+10, 'BENEFICIAIRE', {
-    nom:g.ben_nom.value, ville:g.ben_ville.value, tel:g.ben_tel.value,
-    type:g.ben_type.value, pid:g.ben_pid.value, pidexp:g.ben_pidexp.value
-  });
+  await party(xL, 'EXPEDITEUR', 'المرسل', {nom:g.exp_nom.value, ville:g.exp_ville.value, tel:g.exp_tel.value,
+    type:g.exp_type.value, pid:g.exp_pid.value, pidexp:g.exp_pidexp.value});
+  await party(xR, 'BENEFICIAIRE', 'المستفيد', {nom:g.ben_nom.value, ville:g.ben_ville.value, tel:g.ben_tel.value,
+    type:g.ben_type.value, pid:g.ben_pid.value, pidexp:g.ben_pidexp.value});
 
-  // Amounts panel (right) and notifications+reason (left)
-  const y2 = boxY + boxH + 4;
-  const leftW = colW, rightW = colW;
-  doc.setDrawColor(...line);
-  doc.rect(10, y2, leftW, 40);
-  doc.line(10, y2+6, 10+leftW, y2+6);
-  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.text('Notifications', 12, y2+4.3);
-  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
-  const chk = (v)=> v ? '[x]' : '[ ]';
-  doc.text(`${chk(g.sms_ben.checked)} Bénéficiaire (SMS)`, 12, y2+12);
-  doc.text('Frais SMS HT :  0,00', 70, y2+12);
-  doc.text(`${chk(g.sms_exp.checked)} Expéditeur (SMS)`, 12, y2+19);
-  doc.text('Tva SMS (20%) :  0,00', 70, y2+19);
-  doc.setFont('helvetica','bold'); doc.text('Raison :', 12, y2+28);
+  // ---------- NOTIFICATIONS (gauche) / MONTANTS (droite) ----------
+  const y2 = boxY + boxH + 8;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text('Notifications', xL+2, y2);
+  doc.setLineWidth(0.4); doc.line(xL+2, y2+1, xL+2+doc.getTextWidth('Notifications'), y2+1);
+  await arPut(doc, 'الإشعارات', xL+colW, y2-3.4, 4.4, 'right', true);
   doc.setFont('helvetica','normal');
-  const raison = doc.splitTextToSize(g.raison.value||'', leftW-6);
-  doc.text(raison, 12, y2+34);
+  const cbox = (x,y,on)=>{ doc.setLineWidth(0.3); doc.rect(x,y,3.2,3.2);
+    if(on){ doc.setLineWidth(0.5); doc.line(x+.5,y+1.6,x+1.4,y+2.7); doc.line(x+1.4,y+2.7,x+2.8,y+.6); } };
+  cbox(xL+2, y2+4, g.sms_ben.checked);
+  doc.text('Bénéficiaire (SMS)', xL+7, y2+6.8);
+  doc.text('Frais SMS HT :', xL+62, y2+6.8);  doc.text('0,00', xL+95, y2+6.8);
+  cbox(xL+2, y2+11, g.sms_exp.checked);
+  doc.text('Expéditeur (SMS)', xL+7, y2+13.8);
+  doc.text('Tva SMS (20%) :', xL+62, y2+13.8); doc.text('0,00', xL+95, y2+13.8);
 
-  // Amounts right
-  const xr = 10+leftW+10;
-  doc.rect(xr, y2, rightW, 40);
-  doc.setFont('helvetica','normal'); doc.setFontSize(11);
-  let ry = y2+9;
-  const rline = (label, val, bold=false) => {
+  doc.setFontSize(11);
+  let ry = y2 + 2;
+  const rline = (label, val, bold) => {
     doc.setFont('helvetica', bold?'bold':'normal');
-    doc.text(label, xr+3, ry);
-    doc.text(val, xr+rightW-3, ry, {align:'right'});
-    ry += 8;
+    doc.text(label, xR+2, ry);
+    doc.text(val, xR+colW-2, ry, {align:'right'});
+    ry += 7.5;
   };
+  const arMontants = [
+    ['المبلغ المرسل', 0],
+    ['مجموع المصاريف', 1],
+    ['الرسم على القيمة المضافة', 2],
+    ['المبلغ الإجمالي', 3]
+  ];
   rline('Montant envoyé :', fmt(t.m));
   rline('Total Frais HT (*) :', fmt(t.fr));
   rline('TVA (10%) (**) :', fmt(t.tva));
-  doc.setDrawColor(...dark); doc.line(xr+2, ry-3, xr+rightW-2, ry-3);
+  doc.setLineWidth(0.3); doc.line(xR+2, ry-4.5, xR+colW-2, ry-4.5);
   rline('Total à payer', fmt(t.total), true);
+  for(const [txt,i] of arMontants){
+    await arPut(doc, txt, xR+colW*0.70, y2 - 1.4 + i*7.5, 4, 'right', i===3);
+  }
 
-  // Signatures
-  const y3 = y2 + 44;
-  doc.rect(10, y3, leftW, 22);
-  doc.rect(xr, y3, rightW, 22);
+  // ---------- RAISON (gauche) / SIGNATURES (droite) ----------
+  const y3 = y2 + 28, bH = 27;
   doc.setFont('helvetica','normal'); doc.setFontSize(9);
-  doc.text("Signature du client (*)", 12, y3+5);
-  doc.text("Signature et cachet de l'agence", xr+3, y3+5);
+  doc.text('Raison', xL+2, y3+4);
+  await arPut(doc, 'السبب', xL+2, y3+5.5, 4, 'left');
+  doc.setLineWidth(0.3);
+  doc.rect(xL+20, y3, colW-20, bH);
+  const raison = doc.splitTextToSize(g.raison.value||'', colW-26);
+  doc.text(raison, xL+23, y3+6);
 
-  // Footer note
-  doc.setFontSize(8); doc.setTextColor(...grey);
-  doc.text("Veuillez conserver ce reçu jusqu'au paiement du bénéficiaire", 10, y3+28);
-  doc.text('WAFACASH VOUS REMERCIE POUR VOTRE CONFIANCE', W-10, y3+28, {align:'right'});
-  doc.setFontSize(7);
-  doc.text("(**) Y compris les droits de timbre", 10, y3+33);
-  doc.text('LES CONDITIONS GENERALES AYANT TRAIT AUX SERVICES DU CASH EXPRESS SONT DISPONIBLES DANS VOTRE AGENCE.', 10, y3+38);
+  doc.rect(xR, y3, colW, bH);
+  doc.line(xR+colW/2, y3, xR+colW/2, y3+bH);
+  doc.setFontSize(8.5);
+  doc.text('Signature du client (*)', xR+3, y3+5);
+  doc.text("Signature et cachet de l'agence", xR+colW/2+3, y3+5);
+  await arPut(doc, 'توقيع الزبون', xR+colW/2-3, y3+6.5, 4, 'right');
+  await arPut(doc, 'توقيع وخاتم الوكالة', xR+colW-3, y3+6.5, 4, 'right');
 
-  const name = `cash-express-${(g.ntransfert.value||'recu').replace(/\s+/g,'')}.pdf`;
+  // ---------- PIED DE PAGE ----------
+  const y4 = y3 + bH + 6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text("Veuillez conserver le reçu jusqu'au paiement du bénéficiaire", M, y4);
+  doc.text('WAFACASH VOUS REMERCIE POUR VOTRE CONFIANCE', W-M, y4, {align:'right'});
+  await arPut(doc, 'يرجى الاحتفاظ بهذا الوصل إلى حين دفع المبلغ للمستفيد', M, y4+1.5, 4.2, 'left', true);
+  await arPut(doc, 'وفاكاش تشكركم على ثقتكم', W-M, y4+1.5, 4.2, 'right', true);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7);
+  doc.text('(**) Y compris les droits de timbre', M, y4+8);
+  doc.setFontSize(5.6);
+  doc.text('(*) LES CONDITIONS GENERALES AYANT TRAIT AUX SERVICES DU CASH EXPRESS SONT DISPONIBLES DANS VOTRE AGENCE. EN SIGNANT CE REÇU VOUS ADHEREZ A CES CONDITIONS.', M, y4+11);
+  doc.text('S.A. AU CAPITAL DE 35.050.000 DH - SIEGE SOCIAL 15, RUE DRISS LAHRIZI, CASABLANCA - TEL : 05.22.27.27.55 - FAX : 05.22.26.01.03 - R.C. : 60809 - I.F. : 01084028 - PATENTE : 33251001 - CNSS : 2113801', M, y4+14);
+
+  const name = 'cash-express-' + (g.ntransfert.value||'recu').replace(/\s+/g,'') + '.pdf';
   doc.save(name);
 }
 </script>

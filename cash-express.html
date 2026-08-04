@@ -440,9 +440,6 @@ async function buildPDF(t){
   doc.text('DATE :', xLab+28, 39.5);
   doc.text(frDate(g.date.value) + (g.heure.value? '  ' + g.heure.value + ':00' : ''), xVal, 39.5);
 
-  doc.setLineWidth(0.4);
-  doc.line(M, 44, W-M, 44);
-
   /* ---------- EXPEDITEUR / BENEFICIAIRE ---------- */
   const boxY = 54, rowH = 8.6, boxH = rowH*4;
   function party(x, title, d){
@@ -453,10 +450,7 @@ async function buildPDF(t){
 
     doc.setLineWidth(0.3);
     doc.rect(x, boxY, colW, boxH);
-    for(let i=1;i<4;i++) doc.line(x, boxY+i*rowH, x+colW, boxY+i*rowH);
     const xs = x + colW*0.58;
-    doc.line(xs, boxY+rowH,   xs, boxY+2*rowH);   // Ville | Tél
-    doc.line(xs, boxY+3*rowH, xs, boxY+4*rowH);   // PID N° | PID Exp
 
     doc.setFontSize(9);
     const lab = (txt,cx,r)=>{ doc.setFont('helvetica','normal'); doc.text(txt, cx+2, boxY+r*rowH+5.6); };
@@ -501,9 +495,11 @@ async function buildPDF(t){
     doc.setFont('helvetica', bold?'bold':'normal');
     doc.setFontSize(bold?12:10.5);
     doc.text(label, xAmtLab, ry);
+    doc.setFont('helvetica','bold');
     doc.text(val, xAmtVal, ry);
     ry += 8;
   };
+
   rline('Montant envoyé :', fmt(t.m));
   rline('Total Frais HT (**)', fmt(t.fr));
   rline('TVA (10%) (**)', fmt(t.tva));
@@ -548,16 +544,22 @@ async function buildPDF(t){
   doc.text("Signature et cachet de l'agence", xR+colW/2+3, y3+5);
 
   /* signatures manuscrites bleues, comme sur le reçu d'origine */
+  const halfW = colW/2;
   const sigC = await png('sig_client.png');
   if(sigC){
-    const w = 50, h = w * 58/89;
-    try{ doc.addImage(sigC, 'PNG', xR + 8, y3 + 0.5, w, h); }catch(e){}
+    let w = halfW - 10, h = w * 58/89;
+    const maxH = bH - 8;
+    if(h > maxH){ h = maxH; w = h * 89/58; }
+    try{ doc.addImage(sigC, 'PNG', xR + (halfW - w)/2, y3 + 6.5, w, h); }catch(e){}
   }
   const sigA = await png('sig_agence.png');
   if(sigA){
-    const w = 72, h = w * 53/184;
-    try{ doc.addImage(sigA, 'PNG', xR + colW/2 - 4, y3 + 7, w, h); }catch(e){}
+    let w = halfW - 8, h = w * 53/184;
+    const maxH = bH - 10;
+    if(h > maxH){ h = maxH; w = h * 184/53; }
+    try{ doc.addImage(sigA, 'PNG', xR + halfW + (halfW - w)/2, y3 + bH - h - 4, w, h); }catch(e){}
   }
+
 
 
   /* ---------- PIED DE PAGE ---------- */

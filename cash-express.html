@@ -393,13 +393,35 @@ document.getElementById('pv-dl').addEventListener('click', ()=>{
 /* ---------------- Construction du PDF ---------------- */
 async function buildPDF(t){
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({unit:'mm', format:[297,180], orientation:'landscape'});
+  /* demi-format : page A5 paysage (210 x 148,5 mm) avec des écritures un peu plus grandes */
+  const S = 210/297;            // échelle géométrique (demi format)
+  const FS = S * 1.18;          // échelle typographique (texte agrandi)
+  const _doc = new jsPDF({unit:'mm', format:[210, 148.5], orientation:'landscape'});
+  const doc = {
+    _raw:_doc,
+    setFont:(...a)=>_doc.setFont(...a),
+    setTextColor:(...a)=>_doc.setTextColor(...a),
+    setDrawColor:(...a)=>_doc.setDrawColor(...a),
+    setFillColor:(...a)=>_doc.setFillColor(...a),
+    setFontSize:(v)=>_doc.setFontSize(v*FS),
+    setLineWidth:(v)=>_doc.setLineWidth(v*S),
+    text:(txt,x,y,o)=>_doc.text(txt, x*S, y*S, o),
+    rect:(x,y,w,h,st)=>_doc.rect(x*S, y*S, w*S, h*S, st),
+    line:(x1,y1,x2,y2)=>_doc.line(x1*S, y1*S, x2*S, y2*S),
+    triangle:(x1,y1,x2,y2,x3,y3,st)=>_doc.triangle(x1*S,y1*S,x2*S,y2*S,x3*S,y3*S,st),
+    addImage:(d,fm,x,y,w,h)=>_doc.addImage(d, fm, x*S, y*S, w*S, h*S),
+    getTextWidth:(txt)=>_doc.getTextWidth(txt)/S,
+    splitTextToSize:(txt,w)=>_doc.splitTextToSize(txt, w*S),
+    output:(...a)=>_doc.output(...a),
+    save:(...a)=>_doc.save(...a),
+  };
   const W = 297, H = 180;
   const g = f;
   const M = 10;
   const colW = 133;
   const xL = M, xR = W - M - colW;              // 10 / 154
   doc.setTextColor(0,0,0); doc.setDrawColor(0,0,0);
+
 
   /* ---------- EN-TÊTE ---------- */
   const lg = await logo();

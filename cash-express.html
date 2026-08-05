@@ -445,22 +445,30 @@ async function buildPDF(t){
 
   doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
   doc.text('Agence', xL+2, 33);
-  doc.text(': ' + (g.agence.value||''), xL+22, 33);
+  doc.text(':', xL+22, 33);
+  doc.text(g.agence.value||'', xL+25, 33);
 
   doc.setFont('helvetica','bold'); doc.setFontSize(10.5);
   doc.text('Reçu Client', 125, 38);
 
   // bloc droit
   const xLab = 158, xVal = 205;
+  const xColon = xVal - 5;                        // colonne unique des deux-points
+  // N°TRANSFERT
   doc.setFont('helvetica','bold'); doc.setFontSize(11.5);
-  doc.text('N°TRANSFERT :', xLab, 25.5);
+  doc.text('N°TRANSFERT', xColon-1.5, 25.5, {align:'right'});
+  doc.text(':', xColon, 25.5);
   doc.setFont('helvetica','normal');
   doc.text(g.ntransfert.value||'', xVal, 25.5);
+  // REF.ENTREPRISE
   doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
-  doc.text('REF.ENTREPRISE :', xLab+14, 32.5);
+  doc.text('REF.ENTREPRISE', xColon-1.5, 32.5, {align:'right'});
+  doc.text(':', xColon, 32.5);
   doc.text(g.ref.value||'', xVal, 32.5);
+  // DATE
   doc.setFont('helvetica','bold'); doc.setFontSize(10.5);
-  doc.text('DATE :', xLab+28, 39.5);
+  doc.text('DATE', xColon-1.5, 39.5, {align:'right'});
+  doc.text(':', xColon, 39.5);
   doc.setFont('helvetica','normal');
   doc.text(frDate(g.date.value) + (g.heure.value? '  ' + g.heure.value + ':00' : ''), xVal, 39.5);
 
@@ -477,14 +485,23 @@ async function buildPDF(t){
     const xs = x + colW*0.58;
 
     doc.setFontSize(9);
-    const lab = (txt,cx,r)=>{ doc.setFont('helvetica','bold'); doc.text(txt, cx+2, boxY+r*rowH+5.6); };
-    const val = (txt,cx,r)=>{ doc.setFont('helvetica','normal'); doc.text(txt||'', cx, boxY+r*rowH+5.6); };
-    lab('Nom / Prénom  :', x, 0);   val(d.nom,   x+32, 0);
-    lab('Ville               :', x, 1); val(d.ville, x+32, 1);
-    lab('Tél    :', xs, 1);         val(d.tel,   xs+14, 1);
-    lab('Type pièce      :', x, 2); val(d.type,  x+32, 2);
-    lab('PID N°            :', x, 3); val(d.pid, x+32, 3);
-    lab('PID Exp :', xs, 3);        val(frDate(d.pidexp), xs+20, 3);
+    // colonnes fixes : libellé | deux-points alignés | valeur
+    const cMain = x + 28, vMain = x + 31;          // colonne principale
+    const cSub  = xs + 16, vSub = xs + 19;         // colonne Tél / PID Exp
+    const row = (txt, cx, vx, r, value) => {
+      const yy = boxY + r*rowH + 5.6;
+      doc.setFont('helvetica','bold');
+      doc.text(txt, (cx===cMain ? x+2 : xs+2), yy);
+      doc.text(':', cx, yy);
+      doc.setFont('helvetica','normal');
+      doc.text(value||'', vx, yy);
+    };
+    row('Nom / Prénom', cMain, vMain, 0, d.nom);
+    row('Ville',          cMain, vMain, 1, d.ville);
+    row('Tél',            cSub,  vSub,  1, d.tel);
+    row('Type pièce',     cMain, vMain, 2, d.type);
+    row('PID N°',         cMain, vMain, 3, d.pid);
+    row('PID Exp',        cSub,  vSub,  3, frDate(d.pidexp));
   }
   party(xL, 'EXPEDITEUR', {nom:g.exp_nom.value, ville:g.exp_ville.value, tel:g.exp_tel.value,
     type:g.exp_type.value, pid:g.exp_pid.value, pidexp:g.exp_pidexp.value});
@@ -515,17 +532,18 @@ async function buildPDF(t){
   // montants : libellés à gauche, valeurs alignées sur une colonne
   const xAmtLab = xR + 2, xAmtVal = xR + 52;
   let ry = y2 + 1;
+  const xAmtColon = xAmtVal - 5;                  // deux-points alignés
   const rline = (label, val, bold, size) => {
     const st = bold ? 'bold' : 'normal';
     doc.setFontSize(size || (bold ? 12 : 9.5));
     doc.setFont('helvetica', st);
     doc.text(label, xAmtLab, ry);
-    doc.setFont('helvetica', st);
+    doc.text(':', xAmtColon, ry);
     doc.text(val, xAmtVal, ry);
     ry += 8;
   };
 
-  rline('Montant envoyé :', fmt(t.m), true, 10.5);
+  rline('Montant envoyé', fmt(t.m), true, 10.5);
   rline('Total Frais HT (**)', fmt(t.fr));
   rline('TVA (10%) (**)', fmt(t.tva));
   rline('Total à payer', fmt(t.total), true);

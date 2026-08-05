@@ -454,12 +454,14 @@ async function buildPDF(t){
   const xLab = 158, xVal = 205;
   doc.setFont('helvetica','bold'); doc.setFontSize(11.5);
   doc.text('N°TRANSFERT :', xLab, 25.5);
+  doc.setFont('helvetica','normal');
   doc.text(g.ntransfert.value||'', xVal, 25.5);
   doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
   doc.text('REF.ENTREPRISE :', xLab+14, 32.5);
   doc.text(g.ref.value||'', xVal, 32.5);
   doc.setFont('helvetica','bold'); doc.setFontSize(10.5);
   doc.text('DATE :', xLab+28, 39.5);
+  doc.setFont('helvetica','normal');
   doc.text(frDate(g.date.value) + (g.heure.value? '  ' + g.heure.value + ':00' : ''), xVal, 39.5);
 
   /* ---------- EXPEDITEUR / BENEFICIAIRE ---------- */
@@ -476,7 +478,7 @@ async function buildPDF(t){
 
     doc.setFontSize(9);
     const lab = (txt,cx,r)=>{ doc.setFont('helvetica','normal'); doc.text(txt, cx+2, boxY+r*rowH+5.6); };
-    const val = (txt,cx,r)=>{ doc.setFont('helvetica','bold'); doc.text(txt||'', cx, boxY+r*rowH+5.6); doc.setFont('helvetica','normal'); };
+    const val = (txt,cx,r)=>{ doc.setFont('helvetica','normal'); doc.text(txt||'', cx, boxY+r*rowH+5.6); };
     lab('Nom / Prénom  :', x, 0);   val(d.nom,   x+32, 0);
     lab('Ville               :', x, 1); val(d.ville, x+32, 1);
     lab('Tél    :', xs, 1);         val(d.tel,   xs+14, 1);
@@ -513,16 +515,17 @@ async function buildPDF(t){
   // montants : libellés à gauche, valeurs alignées sur une colonne
   const xAmtLab = xR + 2, xAmtVal = xR + 52;
   let ry = y2 + 1;
-  const rline = (label, val, bold) => {
-    doc.setFont('helvetica', bold?'bold':'normal');
-    doc.setFontSize(bold?12:10.5);
+  const rline = (label, val, bold, size) => {
+    const st = bold ? 'bold' : 'normal';
+    doc.setFontSize(size || (bold ? 12 : 9.5));
+    doc.setFont('helvetica', st);
     doc.text(label, xAmtLab, ry);
-    doc.setFont('helvetica','bold');
+    doc.setFont('helvetica', st);
     doc.text(val, xAmtVal, ry);
     ry += 8;
   };
 
-  rline('Montant envoyé :', fmt(t.m));
+  rline('Montant envoyé :', fmt(t.m), true, 10.5);
   rline('Total Frais HT (**)', fmt(t.fr));
   rline('TVA (10%) (**)', fmt(t.tva));
   rline('Total à payer', fmt(t.total), true);

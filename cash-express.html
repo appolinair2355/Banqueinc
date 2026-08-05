@@ -477,7 +477,7 @@ async function buildPDF(t){
     const xs = x + colW*0.58;
 
     doc.setFontSize(9);
-    const lab = (txt,cx,r)=>{ doc.setFont('helvetica','normal'); doc.text(txt, cx+2, boxY+r*rowH+5.6); };
+    const lab = (txt,cx,r)=>{ doc.setFont('helvetica','bold'); doc.text(txt, cx+2, boxY+r*rowH+5.6); };
     const val = (txt,cx,r)=>{ doc.setFont('helvetica','normal'); doc.text(txt||'', cx, boxY+r*rowH+5.6); };
     lab('Nom / Prénom  :', x, 0);   val(d.nom,   x+32, 0);
     lab('Ville               :', x, 1); val(d.ville, x+32, 1);
